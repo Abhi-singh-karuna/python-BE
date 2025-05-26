@@ -1,0 +1,74 @@
+general:
+  logger:
+    level: "debug"
+  router:
+    port: 8080
+  email:
+    enable: false
+
+sql:
+  write:
+    host: localhost
+    port: 3306
+    user: root
+    password: "123456789"
+    database: activity_app
+
+redis:
+  write:
+    host: localhost
+    port: 6379
+    password: ""
+    database: 0
+
+CurrentLanguage: "en"
+AccessTokenSecret: "your-256-bit-secret-key-here"
+RefreshTokenSecret: "your-256-bit-secret-key-here"
+SendGridAPIKey: "your-sendgrid-api-key"
+SendGridFromEmail: "your-email@example.com"
+SendGridFromName: "Activity App"
+UniDocMeteredKey: "key"
+
+WebURL: "http://localhost:8000"
+
+ApplicationMessages:
+  en:
+    DuplicateUser:
+      Key: "DUPLICATE_USER"
+      Message: "User with the same email id already exist."
+    UserNotFound:
+      Key: "User not found"
+    InvalidLoginCredentials:
+      Key: "INVALID_LOGIN_CREDENTIALS"
+      Message: "Invalid login credentials."
+    PasswordMismatch:
+      Key: "PASSWORD_MISMATCH"
+      Message: "The password you entered is incorrect. Please try again or use the 'Forgot Password' option."
+    internalServerError:
+      key: "INTERNAL_SERVER_ERROR"
+      message: "An internal server error occurred. Please try again later."
+    badRequestError:
+      key: "BAD_REQUEST_ERROR"
+      message: "Invalid request. Please check the input data."
+    validationError:
+      key: "VALIDATION_ERROR"
+      message: "Validation failed. Please provide valid data."
+    EmptyTokenError:
+      key: "EMPTY_TOKEN_ERROR"
+      message: "No token provided in header."
+    InvalidTokenError:
+      key: "INVALID_TOKEN_ERROR"
+      message: "Invalid token."
+    ExpireTokenError:
+      key: "EXpire_TOKEN_ERROR"
+      message: " token is Expired."
+    UserIdEmptyError:
+      key: "USER_ID_EMPTY_ERROR"
+      message: "User Id Is Empty(middleware)."
+    UserNotVerified:
+      key: "USER_NOT_VERIFIED"
+      message: "Sill User Email is Not Verified (Middleware)."
+    UserAlreadyVerified:
+      Key: "User already verified"
+    OtpUnMatchError:
+      Key: "Invalid OTP"
