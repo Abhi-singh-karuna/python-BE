@@ -12,28 +12,17 @@ import bcrypt
 
 class Repository(ABC):
     @abstractmethod
-    async def get_users(self, db) -> List[UserResponse]:
-        pass
-
+    async def get_users(self, db) -> List[UserResponse]:pass
     @abstractmethod
-    async def create_user(self, user: UserCreate, db) -> Optional[UserResponse]:
-        pass
-
+    async def create_user(self, user: UserCreate, db) -> Optional[UserResponse]:pass
     @abstractmethod
-    async def get_user_by_email(self, email: str, db) -> Optional[UserResponse]:
-        pass
-
+    async def get_user_by_email(self, email: str, db) -> Optional[UserResponse]:pass
     @abstractmethod
-    async def verify_user_by_email(self, verify_user: VerifyUser, db) -> Optional[UserResponse]:
-        pass
-
+    async def verify_user_by_email(self, verify_user: VerifyUser, db) -> Optional[UserResponse]:pass
     @abstractmethod
-    async def get_otp_by_email(self, email: str, db) -> Optional[OtpResponse]:
-        pass
-
+    async def get_otp_by_email(self, email: str, db) -> Optional[OtpResponse]:pass
     @abstractmethod
-    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]:
-        pass
+    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]:pass
 
 class UserRepository(Repository):
     def __init__(self, logger: Logger, config: Config, redis_client: CacheHandler):

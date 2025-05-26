@@ -2,13 +2,11 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional
 import bcrypt
 from urllib.parse import urljoin, urlencode
-from jinja2 import Environment, FileSystemLoader
 from model.user_model import (
-    UserBase, Email, Id, VerifyUser, UserCreate, UserResponse, 
+    UserBase, Email, VerifyUser, UserCreate, UserResponse, 
     OtpResponse, EmailVerificationTemplateModel
 )
-from model.auth import Token, TokenData, RefreshToken
-from repository import Repository
+from model.auth import Token, RefreshToken
 from config import Config
 from utils.logger import Logger
 from utils.email_service import EmailService
@@ -43,44 +41,34 @@ class InvalidOtpError(UserServiceError):
 
 class UserService(ABC):
     @abstractmethod
-    async def validate_user_verified(self, user_id: str, db: AsyncSession) -> Tuple[bool, Optional[UserBase]]:
-        pass
+    async def validate_user_verified(self, user_id: str, db: AsyncSession) -> Tuple[bool, Optional[UserBase]]:pass
 
     @abstractmethod
-    async def get_users(self, db: AsyncSession) -> List[UserBase]:
-        pass
+    async def get_users(self, db: AsyncSession) -> List[UserBase]: pass
 
     @abstractmethod
-    async def create_user(self, user: UserCreate, db: AsyncSession) -> Optional[UserResponse]:
-        pass
+    async def create_user(self, user: UserCreate, db: AsyncSession) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def get_user_by_email(self, email: str, db: AsyncSession) -> Optional[UserResponse]:
-        pass
+    async def get_user_by_email(self, email: str, db: AsyncSession) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def get_user_by_id(self, user_id: str, db: AsyncSession) -> Optional[UserResponse]:
-        pass
+    async def get_user_by_id(self, user_id: str, db: AsyncSession) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def verify_user_by_email(self, user_info: VerifyUser, db: AsyncSession) -> Optional[UserBase]:
-        pass
+    async def verify_user_by_email(self, user_info: VerifyUser, db: AsyncSession) -> Optional[UserBase]: pass
 
     @abstractmethod
-    async def get_otp_by_email(self, email: Email, db: AsyncSession) -> Optional[OtpResponse]:
-        pass
+    async def get_otp_by_email(self, email: Email, db: AsyncSession) -> Optional[OtpResponse]: pass
 
     @abstractmethod
-    async def generate_user_registration_draft(self, user: UserBase) -> str:
-        pass
+    async def generate_user_registration_draft(self, user: UserBase) -> str: pass
 
     @abstractmethod
-    async def verify_credentials(self, email: str, password: str, db: AsyncSession) -> Optional[UserResponse]:
-        pass
+    async def verify_credentials(self, email: str, password: str, db: AsyncSession) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def verify_refresh_token(self, refresh_token: str, db: AsyncSession) -> Optional[UserResponse]:
-        pass
+    async def verify_refresh_token(self, refresh_token: str, db: AsyncSession) -> Optional[UserResponse]: pass
 
 class UserInteractor(UserService):
     def __init__(
