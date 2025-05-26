@@ -235,6 +235,8 @@ class UserController:
                 )
             raise HTTPException(status_code=500, detail=str(e))
 
+
+
     async def signup(self, user: UserCreate, db: AsyncSession) -> Token:
         """
         Handles user signup process and returns authentication tokens.
@@ -268,6 +270,8 @@ class UserController:
         except Exception as e:
             self.logger.error(f"Error in signup: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
+
+
 
     async def login(self, token_data: TokenData, db: AsyncSession) -> Token:
         """
