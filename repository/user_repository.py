@@ -6,7 +6,7 @@ from utils.cache_handler import CacheHandler
 import uuid
 from datetime import datetime
 from model.user_model import UserBase, UserCreate, UserResponse, VerifyUser, OtpResponse
-from config.database import get_connection
+from database import DatabaseConnection
 import aiomysql
 import bcrypt
 
@@ -217,5 +217,8 @@ class UserRepository(Repository):
                 return user
         except Exception as e:
             self.logger.error(f"Error getting user by email with password: {str(e)}")
-            raise 
+            raise
+
+async def get_connection():
+    return await DatabaseConnection.get_connection() 
         

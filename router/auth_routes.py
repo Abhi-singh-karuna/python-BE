@@ -3,7 +3,7 @@ from model.user_model import UserCreate, UserResponse
 from model.auth import Token, TokenData, RefreshToken
 from middleware.auth_middleware import auth_middleware
 from typing import AsyncGenerator
-from config.database import get_connection, release_connection
+from database import DatabaseConnection
 
 # Create router instance
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -18,6 +18,13 @@ async def get_db() -> AsyncGenerator:
     finally:
         if conn:
             await release_connection(conn)
+
+# Replace get_connection and release_connection with DatabaseConnection methods
+async def get_connection():
+    return await DatabaseConnection.get_connection()
+
+async def release_connection(conn):
+    await DatabaseConnection.release_connection(conn)
 
 # Auth routes
 @router.post("/signup", response_model=Token)

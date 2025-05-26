@@ -1,6 +1,6 @@
 # Import necessary libraries and modules
 from fastapi import FastAPI
-from config.database import init_db, close_pool
+from database import DatabaseConnection
 from config import Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
@@ -45,13 +45,13 @@ app.include_router(api_router)
 @app.on_event("startup")
 async def startup_event():
     """Initialize application on startup"""
-    await init_db()
+    await DatabaseConnection.init_db()
     logger.info("Application startup complete")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup application on shutdown"""
-    await close_pool()
+    await DatabaseConnection.close_pool()
     logger.info("Application shutdown complete")
 
 # Run the application using Uvicorn server
