@@ -4,15 +4,18 @@ from datetime import datetime
 from jose import jwt
 
 class UserBase(BaseModel):
+    """Base model for user data"""
     name: str
     email: EmailStr
     phone_no: int
 
 class UserCreate(UserBase):
+    """Model for user creation request"""
     password: str
     otp: Optional[str] = None
 
 class UserResponse(UserBase):
+    """Model for user response data"""
     id: str
     is_verified: bool
     created_at: datetime
@@ -63,6 +66,7 @@ class HeaderId(BaseModel):
     user_name: Optional[str] = None
 
 class StandardResponse(BaseModel):
+    """Standard response model for API responses"""
     success: bool
     message: str
     data: Optional[dict] = None
@@ -70,11 +74,13 @@ class StandardResponse(BaseModel):
     meta: Optional[dict] = None
 
 class ErrorInfo(BaseModel):
+    """Model for error information"""
     code: str
     message: str
     details: Optional[str] = None
 
 class MetaInfo(BaseModel):
+    """Model for metadata information"""
     timestamp: datetime
     version: str = "1.0"
     trace_id: Optional[str] = None
@@ -108,6 +114,7 @@ class EmailVerificationTemplateModel(BaseModel):
     body: str = Field(..., description="Email body")
 
 def new_success_response(message: str, data: Optional[dict] = None) -> StandardResponse:
+    """Helper function to create a success response"""
     return StandardResponse(
         success=True,
         message=message,
@@ -119,6 +126,7 @@ def new_success_response(message: str, data: Optional[dict] = None) -> StandardR
     )
 
 def new_error_response(code: str, message: str, details: Optional[str] = None) -> StandardResponse:
+    """Helper function to create an error response"""
     return StandardResponse(
         success=False,
         message=message,

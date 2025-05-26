@@ -5,40 +5,57 @@ from typing import Optional
 from config import Config
 from utils.logger import Logger
 from repository.user_repository import UserRepository
-from model.user_model import JwtCustomClaims, HeaderId
+from model.user_model import UserResponse
 
 security = HTTPBearer()
 config = Config()
-logger = Logger()
-
-AUTH_HEADER = "IDToken"
-HEADER_ID = "HeaderId"
-
-def parse_message(error_message: str) -> dict:
-    return {"message": error_message}
+logger = Logger(name="auth_middleware")
 
 async def auth_middleware(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Middleware to authenticate requests using JWT tokens.
+    
+    Args:
+        request: FastAPI request object
+        credentials: HTTP authorization credentials containing the JWT token
+        
+    Returns:
+        Dictionary containing user information from the token
+        
+    Raises:
+        HTTPException: If token is invalid, expired, or missing
+    """
     token = credentials.credentials
     if not token:
         raise HTTPException(
-            status_code=400,
-            detail=config.ApplicationMessages[config.CurrentLanguage]["EmptyTokenError"]["Message"]
+            status_code=401,
+            detail="No token provided"
         )
 
     try:
-        claims = JwtCustomClaims()
+        # Decode and verify the token
         payload = jwt.decode(
             token,
-            config.AccessTokenSecret,
-            algorithms=["HS256"]
+            config.get("JWT_SECRET_KEY"),
+            algorithms=[config.get("JWT_ALGORITHM")]
         )
-        claims.__dict__.update(payload)
-        request.state.user = claims
-        return claims
+        
+        # Add user info to request state
+        request.state.user = {
+            "id": payload["id"],
+            "email": payload["email"]
+        }
+        
+        return request.state.user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token has expired"
+        )
     except JWTError:
         raise HTTPException(
-            status_code=400,
-            detail=config.ApplicationMessages[config.CurrentLanguage]["InvalidTokenError"]["Message"]
+            status_code=401,
+            detail="Invalid token"
         )
 
 async def auth_verified_middleware(

@@ -5,19 +5,15 @@ from config.database import get_connection, init_db  # Database connection utili
 from config import Config  # Configuration management
 from utils.logger import Logger  # Logger utility for logging events
 from utils.cache_handler import CacheHandler  # Cache handler for Redis
-from utils.email_service import EmailService  # Email service for sending emails
-from repository.user_repository import Database  # User repository for database operations
+from repository.user_repository import UserRepository  # User repository for database operations
 from service.user_service import UserInteractor  # Service layer for user-related business logic
 from controller.user_controller import UserController  # Controller for handling user-related API requests
-from model.user_model import (  # Importing user-related data models
-    UserBase, UserCreate, UserResponse, VerifyUser,
-    OtpResponse, Email
-)
+from model.user_model import UserCreate, UserResponse  # Importing user-related data models
 from model.auth import Token, TokenData, RefreshToken  # Importing authentication-related models
-from typing import List  # For type hinting lists
+from middleware.auth_middleware import auth_middleware  # Import auth middleware for protected routes
 
 # Create an instance of the FastAPI application
-app = FastAPI(title="Activity App API")
+app = FastAPI(title="Authentication API")
 
 # Configure CORS (Cross-Origin Resource Sharing) to allow requests from any origin
 app.add_middleware(
@@ -30,28 +26,21 @@ app.add_middleware(
 
 # Initialize application dependencies
 config = Config()  # Load application configuration
-logger = Logger(name="activity_app")  # Create a logger instance for the application
+logger = Logger(name="auth_app")  # Create a logger instance for the application
 
 # Configure Redis for caching
 redis_conf = config.get('redis')['write']  # Get Redis configuration from the settings
 redis_url = f"redis://:{redis_conf['password']}@{redis_conf['host']}:{redis_conf['port']}/{redis_conf['database']}"  # Construct Redis URL
 cache_handler = CacheHandler(redis_url=redis_url)  # Create a cache handler instance
 
-# Configure email service using SendGrid
-api_key = config.get('SendGridAPIKey')  # Get SendGrid API key from configuration
-from_email = config.get('SendGridFromEmail')  # Get sender email from configuration
-from_name = config.get('SendGridFromName')  # Get sender name from configuration
-email_service = EmailService(api_key, from_email, from_name)  # Create an email service instance
-
 # Initialize the user repository with dependencies
-user_repo = Database(logger=logger, config=config, redis_client=cache_handler)  # Create a user repository instance
+user_repo = UserRepository(logger=logger, config=config, redis_client=cache_handler)  # Create a user repository instance
 
 # Initialize the user service with the repository and other dependencies
 user_service = UserInteractor(
     user_repo=user_repo,  # Pass the user repository
     logger=logger,  # Pass the logger
     config=config,  # Pass the configuration
-    email_service=email_service  # Pass the email service
 )
 
 # Initialize the user controller with the service and other dependencies
@@ -67,32 +56,6 @@ user_controller = UserController(
 async def startup_event():
     await init_db()  # Initialize the database connection
 
-# Define an API endpoint to get all users
-@app.get("/users", response_model=List[UserResponse])
-async def get_users(db=Depends(get_connection)):  # Use dependency injection to get the database connection
-    return await user_controller.get_users(db)  # Call the controller method to get users
-
-# Define an API endpoint to create a new user
-@app.post("/users", response_model=UserResponse)
-async def create_user(user: UserCreate, db=Depends(get_connection)):  # Use dependency injection for the database
-    print(f"Creating user in main.py: {user}")  # Log the user creation attempt
-    return await user_controller.create_user(user, db)  # Call the controller method to create a user
-
-# Define an API endpoint to get a user by their email
-@app.get("/users/email/{email}", response_model=UserResponse)
-async def get_user_by_email(email: str, db=Depends(get_connection)):  # Use dependency injection for the database
-    return await user_controller.get_user_by_email(Email(email=email), db)  # Call the controller method to get user by email
-
-# Define an API endpoint to get an OTP by email
-@app.get("/users/otp/{email}", response_model=OtpResponse)
-async def get_otp_by_email(email: str, db=Depends(get_connection)):  # Use dependency injection for the database
-    return await user_controller.get_otp_by_email(Email(email=email), db)  # Call the controller method to get OTP
-
-# Define an API endpoint to verify a user by email and OTP
-@app.post("/users/verify", response_model=UserResponse)
-async def verify_user_by_email(verify_user: VerifyUser, db=Depends(get_connection)):  # Use dependency injection for the database
-    return await user_controller.verify_user_by_email(verify_user, db)  # Call the controller method to verify user
-
 # Define an API endpoint for user signup
 @app.post("/auth/signup", response_model=Token)
 async def signup(user: UserCreate, db=Depends(get_connection)):  # Use dependency injection for the database
@@ -107,6 +70,14 @@ async def login(token_data: TokenData, db=Depends(get_connection)):  # Use depen
 @app.post("/auth/refresh", response_model=Token)
 async def refresh_token(refresh_token: RefreshToken, db=Depends(get_connection)):  # Use dependency injection for the database
     return await user_controller.refresh_token(refresh_token, db)  # Call the controller method to refresh token
+
+# Define an API endpoint to get user information
+@app.get("/auth/user", response_model=UserResponse)
+async def get_user(
+    db=Depends(get_connection),
+    current_user: dict = Depends(auth_middleware)
+):  # Use dependency injection for the database and auth middleware
+    return await user_controller.get_user(db, current_user)  # Call the controller method to get user info
 
 # Run the application using Uvicorn server
 if __name__ == "__main__":

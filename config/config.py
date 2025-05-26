@@ -6,13 +6,15 @@ import os
 from pathlib import Path
 
 class Settings(BaseSettings):
+    """Base settings class for the application"""
+    
     # Application settings
-    APP_NAME: str = "Activity App API"
+    APP_NAME: str = "Authentication API"
     DEBUG: bool = True
     VERSION: str = "1.0.0"
     
     # Database settings
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/activity_app"
+    DATABASE_URL: str = "mysql+aiomysql://root:123456789@localhost:3306/auth_app"
     
     # Redis settings
     REDIS_HOST: str = "localhost"
@@ -22,25 +24,15 @@ class Settings(BaseSettings):
     
     # JWT settings
     JWT_SECRET_KEY: str = "your-super-secret-jwt-key-change-in-production"
+    JWT_REFRESH_SECRET_KEY: str = "your-super-secret-jwt-refresh-key-change-in-production"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    
-    # Email settings
-    SENDGRID_API_KEY: str = "your-sendgrid-api-key"
-    SENDGRID_FROM_EMAIL: str = "your-email@example.com"
-    SENDGRID_FROM_NAME: str = "Activity App"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # CORS settings
     CORS_ORIGINS: list = ["*"]
     CORS_METHODS: list = ["*"]
     CORS_HEADERS: list = ["*"]
-    
-    # Web URL for email verification
-    WEB_URL: str = "http://localhost:3000"
-    
-    # Language settings
-    DEFAULT_LANGUAGE: str = "en"
     
     class Config:
         env_file = ".env"
@@ -52,31 +44,33 @@ class Settings(BaseSettings):
         return cls()
 
     def get_redis_url(self) -> str:
+        """Get Redis URL from settings"""
         return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
-    def load_messages(self) -> Dict[str, Any]:
-        messages_file = f"config/messages/{self.DEFAULT_LANGUAGE}.yaml"
-        if not os.path.exists(messages_file):
-            messages_file = "config/messages/en.yaml"
-        
-        with open(messages_file, "r") as f:
-            return yaml.safe_load(f)
-
 class Config:
+    """Configuration class for loading and accessing application settings"""
+    
     def __init__(self):
+        """Initialize configuration by loading from YAML file"""
         self.config = self.load_config()
-        self.CurrentLanguage = self.config.get('CurrentLanguage', 'en')
-        self.ApplicationMessages = self.config.get('ApplicationMessages', {})
-        self.AccessTokenSecret = self.config.get('AccessTokenSecret')
-        self.RefreshTokenSecret = self.config.get('RefreshTokenSecret')
-        self.WebURL = self.config.get('WebURL')
 
-    def load_config(self):
+    def load_config(self) -> Dict[str, Any]:
+        """Load configuration from YAML file"""
         config_path = 'config/config.yml'
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get a configuration value by key
+        
+        Args:
+            key: Configuration key to retrieve
+            default: Default value if key is not found
+            
+        Returns:
+            Configuration value or default if not found
+        """
         return self.config.get(key, default)
 
 settings = Settings.get_settings() 

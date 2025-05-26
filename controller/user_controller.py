@@ -14,10 +14,11 @@ from config import Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
 from service.user_service import UserInteractor
+from middleware.auth_middleware import auth_middleware
 
 class UserController:
     """
-    UserController class handles all user-related operations and API endpoints.
+    UserController class handles all authentication-related operations and API endpoints.
     It acts as a bridge between the API routes and the business logic (UserService).
     """
     
@@ -249,7 +250,12 @@ class UserController:
             HTTPException: If signup fails or user already exists
         """
         try:
+            # Create user in database
             created_user = await self.user_service.create_user(user, db)
+            if not created_user:
+                raise HTTPException(status_code=400, detail="Failed to create user")
+
+            # Generate tokens
             access_token = await self.create_access_token(created_user)
             refresh_token = await self.create_refresh_token(created_user)
 
@@ -260,11 +266,7 @@ class UserController:
                 expires_in=3600
             )
         except Exception as e:
-            if "DUPLICATE_USER" in str(e):
-                raise HTTPException(
-                    status_code=400,
-                    detail=self.config.ApplicationMessages[self.config.CurrentLanguage]["DuplicateUser"]["Message"]
-                )
+            self.logger.error(f"Error in signup: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
 
     async def login(self, token_data: TokenData, db: AsyncSession) -> Token:
@@ -279,37 +281,17 @@ class UserController:
             Token object containing access and refresh tokens
             
         Raises:
-            HTTPException: If login fails, user not found, or not verified
+            HTTPException: If login fails or credentials are invalid
         """
         try:
-            existing_user = await self.user_service.get_user_by_email(Email(email=token_data.email), db)
-            if not existing_user:
-                raise HTTPException(
-                    status_code=404,
-                    detail=self.config.ApplicationMessages[self.config.CurrentLanguage]["UserNotFound"]["Message"]
-                )
+            # Verify credentials and get user
+            user = await self.user_service.verify_credentials(token_data.email, token_data.password, db)
+            if not user:
+                raise HTTPException(status_code=401, detail="Invalid credentials")
 
-            if not existing_user.is_verified:
-                raise HTTPException(
-                    status_code=403,
-                    detail=self.config.ApplicationMessages[self.config.CurrentLanguage]["UserNotVerified"]["Message"]
-                )
-
-            if not bcrypt.checkpw(
-                token_data.password.encode('utf-8'),
-                existing_user.password.encode('utf-8')
-            ):
-                raise HTTPException(
-                    status_code=400,
-                    detail=self.config.ApplicationMessages[self.config.CurrentLanguage]["PasswordMismatch"]["Message"]
-                )
-
-            access_token = await self.create_access_token(existing_user)
-            refresh_token = await self.create_refresh_token(existing_user)
-
-            # Store tokens in Redis for session management
-            await self.cache_handler.set(f"accessToken_{existing_user.id}", access_token, 3600)
-            await self.cache_handler.set(f"refreshToken_{existing_user.id}", refresh_token, 86400)
+            # Generate tokens
+            access_token = await self.create_access_token(user)
+            refresh_token = await self.create_refresh_token(user)
 
             return Token(
                 access_token=access_token,
@@ -320,6 +302,7 @@ class UserController:
         except HTTPException:
             raise
         except Exception as e:
+            self.logger.error(f"Error in login: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
 
     async def verify_user(self, email: str, otp: str, db: AsyncSession) -> OtpResponse:
@@ -372,58 +355,97 @@ class UserController:
 
     async def refresh_token(self, refresh_token: RefreshToken, db: AsyncSession) -> Token:
         """
-        Generates new access token using refresh token.
+        Refreshes the access token using a valid refresh token.
         
         Args:
-            refresh_token: RefreshToken object
+            refresh_token: RefreshToken object containing the refresh token
             db: Database session
             
         Returns:
-            Token object containing new access token
+            Token object containing new access and refresh tokens
             
         Raises:
-            HTTPException: If refresh token is invalid
+            HTTPException: If refresh token is invalid or expired
         """
         try:
-            result = await self.user_service.refresh_token(refresh_token, db)
-            if not result:
+            # Verify refresh token and get user
+            user = await self.user_service.verify_refresh_token(refresh_token.refresh_token, db)
+            if not user:
                 raise HTTPException(status_code=401, detail="Invalid refresh token")
-            return result
+
+            # Generate new tokens
+            access_token = await self.create_access_token(user)
+            new_refresh_token = await self.create_refresh_token(user)
+
+            return Token(
+                access_token=access_token,
+                refresh_token=new_refresh_token,
+                token_type="bearer",
+                expires_in=3600
+            )
+        except HTTPException:
+            raise
         except Exception as e:
             self.logger.error(f"Error in refresh_token: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def create_access_token(self, user: UserResponse) -> str:
+    async def get_user(self, db: AsyncSession, current_user: dict = Depends(auth_middleware)) -> UserResponse:
         """
-        Creates JWT access token for user authentication.
+        Retrieves the current user's information.
         
         Args:
-            user: UserResponse object containing user details
+            db: Database session
+            current_user: Dictionary containing current user information from auth middleware
+            
+        Returns:
+            UserResponse object containing user information
+            
+        Raises:
+            HTTPException: If user not found or other errors occur
+        """
+        try:
+            user = await self.user_service.get_user_by_id(current_user["id"], db)
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            return user
+        except HTTPException:
+            raise
+        except Exception as e:
+            self.logger.error(f"Error in get_user: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def create_access_token(self, user: UserResponse) -> str:
+        """
+        Creates a new access token for the user.
+        
+        Args:
+            user: UserResponse object containing user information
             
         Returns:
             JWT access token string
         """
-        expires_delta = timedelta(minutes=15)
+        expires_delta = timedelta(hours=1)
         expire = datetime.utcnow() + expires_delta
         
         to_encode = {
             "id": user.id,
             "email": user.email,
-            "exp": expire
+            "exp": expire.timestamp(),
+            "iat": datetime.utcnow().timestamp()
         }
         
         return jwt.encode(
             to_encode,
-            self.config.AccessTokenSecret,
-            algorithm="HS256"
+            self.config.get("JWT_SECRET_KEY"),
+            algorithm=self.config.get("JWT_ALGORITHM")
         )
 
     async def create_refresh_token(self, user: UserResponse) -> str:
         """
-        Creates JWT refresh token for token renewal.
+        Creates a new refresh token for the user.
         
         Args:
-            user: UserResponse object containing user details
+            user: UserResponse object containing user information
             
         Returns:
             JWT refresh token string
@@ -434,11 +456,12 @@ class UserController:
         to_encode = {
             "id": user.id,
             "email": user.email,
-            "exp": expire
+            "exp": expire.timestamp(),
+            "iat": datetime.utcnow().timestamp()
         }
         
         return jwt.encode(
             to_encode,
-            self.config.RefreshTokenSecret,
-            algorithm="HS256"
+            self.config.get("JWT_REFRESH_SECRET_KEY"),
+            algorithm=self.config.get("JWT_ALGORITHM")
         ) 

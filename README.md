@@ -1,13 +1,12 @@
-# Activity App Backend
+# Authentication API
 
-A modern, scalable backend API for the Activity App built with FastAPI, PostgreSQL, and Redis.
+A modern, scalable authentication API built with FastAPI, MySQL, and Redis.
 
 ## Features
 
 - User authentication with JWT tokens
-- Email verification system
 - Redis caching
-- PostgreSQL database
+- MySQL database
 - Async/await for better performance
 - Comprehensive error handling
 - Type hints and Pydantic models
@@ -16,9 +15,8 @@ A modern, scalable backend API for the Activity App built with FastAPI, PostgreS
 ## Tech Stack
 
 - FastAPI 0.104.1
-- PostgreSQL with asyncpg
+- MySQL with aiomysql
 - Redis with aioredis
-- SendGrid for email services
 - Pydantic for data validation
 - Python 3.8+
 
@@ -34,9 +32,6 @@ A modern, scalable backend API for the Activity App built with FastAPI, PostgreS
 ├── utils/             # Utility functions
 ├── middleware/        # FastAPI middleware
 ├── router/            # API routes
-├── migration/         # Database migrations
-├── templates/         # Email templates
-├── tests/             # Unit tests
 ├── main.py           # Application entry point
 └── requirements.txt   # Project dependencies
 ```
@@ -59,16 +54,13 @@ pip install -r requirements.txt
 3. Create a `.env` file with the following variables:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/dbname
+DATABASE_URL=mysql+aiomysql://user:password@localhost:3306/auth_app
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=your_redis_password
 REDIS_DB=0
 JWT_SECRET_KEY=your_jwt_secret
-SENDGRID_API_KEY=your_sendgrid_api_key
-SENDGRID_FROM_EMAIL=your_email@example.com
-SENDGRID_FROM_NAME=Your Name
-WEB_URL=http://localhost:3000
+JWT_REFRESH_SECRET_KEY=your_jwt_refresh_secret
 ```
 
 4. Run the application:
@@ -76,6 +68,15 @@ WEB_URL=http://localhost:3000
 ```bash
 uvicorn main:app --reload
 ```
+
+## API Endpoints
+
+### Authentication
+
+- `POST /auth/signup` - Register a new user
+- `POST /auth/login` - Login and get access token
+- `POST /auth/refresh` - Refresh access token
+- `GET /auth/user` - Get current user info
 
 ## API Documentation
 

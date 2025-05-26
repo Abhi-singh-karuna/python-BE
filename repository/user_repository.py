@@ -8,6 +8,7 @@ from datetime import datetime
 from model.user_model import UserBase, UserCreate, UserResponse, VerifyUser, OtpResponse
 from config.database import get_connection
 import aiomysql
+import bcrypt
 
 class Repository(ABC):
     @abstractmethod
@@ -30,7 +31,11 @@ class Repository(ABC):
     async def get_otp_by_email(self, email: str, db) -> Optional[OtpResponse]:
         pass
 
-class Database(Repository):
+    @abstractmethod
+    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]:
+        pass
+
+class UserRepository(Repository):
     def __init__(self, logger: Logger, config: Config, redis_client: CacheHandler):
         self.logger = logger
         self.config = config
@@ -47,9 +52,28 @@ class Database(Repository):
             raise
 
     async def create_user(self, user: UserCreate, db) -> Optional[UserResponse]:
-        print(f"Creating user in repository: {user}")
+        """
+        Creates a new user in the database.
+        
+        Args:
+            user: UserCreate object containing user details
+            db: Database connection
+            
+        Returns:
+            UserResponse object if user is created successfully, None otherwise
+        """
         try:
             async with db.cursor(aiomysql.DictCursor) as cursor:
+                # Check if user already exists
+                await cursor.execute("SELECT * FROM users WHERE email = %s", (user.email,))
+                existing_user = await cursor.fetchone()
+                if existing_user:
+                    raise Exception("User already exists")
+
+                # Hash password
+                hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+
+                # Create user
                 user_id = str(uuid.uuid4())
                 now = datetime.utcnow()
                 query = """
@@ -64,9 +88,9 @@ class Database(Repository):
                         user_id,
                         user.name,
                         user.email,
-                        user.password,
+                        hashed_password.decode('utf-8'),
                         user.phone_no,
-                        False,
+                        True,  # Auto-verify for simplicity
                         True,
                         now,
                         now
@@ -83,6 +107,16 @@ class Database(Repository):
             raise
 
     async def get_user_by_email(self, email: str, db) -> Optional[UserResponse]:
+        """
+        Retrieves a user by their email address.
+        
+        Args:
+            email: User's email address
+            db: Database connection
+            
+        Returns:
+            UserResponse object if user is found, None otherwise
+        """
         try:
             async with db.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
@@ -154,5 +188,45 @@ class Database(Repository):
                 )
         except Exception as e:
             self.logger.error(f"Error getting OTP: {str(e)}")
+            raise
+
+    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]:
+        """
+        Retrieves a user by their ID.
+        
+        Args:
+            user_id: User's ID
+            db: Database connection
+            
+        Returns:
+            UserResponse object if user is found, None otherwise
+        """
+        try:
+            async with db.cursor(aiomysql.DictCursor) as cursor:
+                await cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+                user = await cursor.fetchone()
+                return UserResponse(**user) if user else None
+        except Exception as e:
+            self.logger.error(f"Error getting user by id: {str(e)}")
+            raise
+
+    async def get_user_by_email_with_password(self, email: str, db) -> Optional[dict]:
+        """
+        Retrieves a user by their email address, including password.
+        
+        Args:
+            email: User's email address
+            db: Database connection
+            
+        Returns:
+            Dictionary containing user data including password if user is found, None otherwise
+        """
+        try:
+            async with db.cursor(aiomysql.DictCursor) as cursor:
+                await cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+                user = await cursor.fetchone()
+                return user
+        except Exception as e:
+            self.logger.error(f"Error getting user by email with password: {str(e)}")
             raise 
         

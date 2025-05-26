@@ -22,10 +22,19 @@ DB_CONFIG = {
 }
 
 async def get_connection():
+    """
+    Get a database connection.
+    
+    Returns:
+        aiomysql.Connection: Database connection object
+    """
     return await aiomysql.connect(**DB_CONFIG)
 
 async def init_db():
-    """Initialize database tables"""
+    """
+    Initialize database tables.
+    Creates the users table if it doesn't exist.
+    """
     conn = await get_connection()
     try:
         async with conn.cursor() as cursor:
@@ -37,25 +46,12 @@ async def init_db():
                     email VARCHAR(255) UNIQUE NOT NULL,
                     password VARCHAR(255) NOT NULL,
                     phone_no VARCHAR(20),
-                    is_verified BOOLEAN DEFAULT FALSE,
+                    is_verified BOOLEAN DEFAULT TRUE,
                     is_active BOOLEAN DEFAULT TRUE,
                     created_at DATETIME NOT NULL,
                     updated_at DATETIME NOT NULL
                 )
             """)
-
-            # Create otps table
-            await cursor.execute("""
-                CREATE TABLE IF NOT EXISTS otps (
-                    id VARCHAR(36) PRIMARY KEY,
-                    email VARCHAR(255) NOT NULL,
-                    otp VARCHAR(6) NOT NULL,
-                    is_used BOOLEAN DEFAULT FALSE,
-                    created_at DATETIME NOT NULL,
-                    expires_at DATETIME NOT NULL
-                )
-            """)
-
             await conn.commit()
     finally:
         conn.close() 
