@@ -1,8 +1,8 @@
 from fastapi import APIRouter
-from .auth_routes import router as auth_router
+from .auth_router import get_auth_router
 
 # Create main router
 api_router = APIRouter()
 
-# Include all routers
-api_router.include_router(auth_router) 
+# Note: The auth router is now included in main.py using dependency injection
+# This prevents circular imports and provides better control over dependencies 

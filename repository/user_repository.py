@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from config import Config
+from config.config import load_config, Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
 import uuid
@@ -57,7 +57,7 @@ class UserRepository(Repository):
                 await cursor.execute("SELECT * FROM users WHERE email = %s", (user.email,))
                 existing_user = await cursor.fetchone()
                 if existing_user:
-                    raise Exception("User already exists")
+                    raise Exception("User already exists.")
 
                 # Hash password
                 hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())

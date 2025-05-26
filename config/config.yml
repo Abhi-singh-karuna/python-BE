@@ -32,6 +32,9 @@ ApplicationMessages:
     UserNotFound:
       Key: "USER_NOT_FOUND"
       Message: "User not found"
+    DuplicateUser:
+      Key: "DUPLICATE_USER"
+      Message: "User already exists."
     InvalidCredentials:
       Key: "INVALID_CREDENTIALS"
       Message: "Invalid credentials"

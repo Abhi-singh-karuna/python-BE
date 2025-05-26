@@ -7,23 +7,24 @@ executing SQL files, and managing database connections in an asynchronous contex
 """
 
 import aiomysql
-import yaml
 from pathlib import Path
 from typing import Optional
 from utils.logger import Logger
+from config.config import load_config
 
 logger = Logger(name="database")
 
 class DatabaseConnection:
     # A class to manage the database connection pool.
     _pool: Optional[aiomysql.Pool] = None  # Single shared instance
+    _config = None
 
     @classmethod
     def _load_config(cls):
-        # Load the database configuration from a YAML file.
-        config_path = Path("config/config.yml")
-        with open(config_path, 'r') as f:
-            return yaml.safe_load(f)
+        # Load the database configuration using the new config system
+        if cls._config is None:
+            cls._config = load_config("config/config.yml")
+        return cls._config
 
     @classmethod
     def _load_sql_file(cls, filename: str) -> str:
@@ -38,11 +39,11 @@ class DatabaseConnection:
         if cls._pool is None:
             config = cls._load_config()
             db_config = {
-                'host': config['sql']['write']['host'],
-                'port': config['sql']['write']['port'],
-                'user': config['sql']['write']['user'],
-                'password': config['sql']['write']['password'],
-                'db': config['sql']['write']['database'],
+                'host': config.sql.write.host,
+                'port': config.sql.write.port,
+                'user': config.sql.write.user,
+                'password': config.sql.write.password,
+                'db': config.sql.write.database,
                 'charset': 'utf8mb4',
                 'autocommit': True
             }

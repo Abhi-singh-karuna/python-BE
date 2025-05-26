@@ -7,7 +7,7 @@ from model.user_model import (
     OtpResponse, EmailVerificationTemplateModel
 )
 from model.auth import Token, RefreshToken
-from config import Config
+from config.config import load_config, Config
 from utils.logger import Logger
 from utils.email_service import EmailService
 from utils.otp_generator import generate_otp
@@ -148,19 +148,19 @@ class UserInteractor(UserService):
     async def verify_user_by_email(self, user_info: VerifyUser, db: AsyncSession) -> Optional[UserBase]:
         user = await self.user_repo.verify_user_by_email(user_info, db)
         if not user or not user.email:
-            raise UserNotFoundError(self.config.ApplicationMessages[self.config.CurrentLanguage]["UserNotFound"]["Key"])
+            raise UserNotFoundError(self.config.ApplicationMessages.en.UserNotFound.Message)
         if user.is_verified:
-            raise UserAlreadyVerifiedError(self.config.ApplicationMessages[self.config.CurrentLanguage]["UserAlreadyVerified"]["Key"])
+            raise UserAlreadyVerifiedError(self.config.ApplicationMessages.en.UserAlreadyVerified.Message)
         if user.otp != user_info.otp:
-            raise InvalidOtpError(self.config.ApplicationMessages[self.config.CurrentLanguage]["OtpUnMatchError"]["Key"])
+            raise InvalidOtpError(self.config.ApplicationMessages.en.InvalidOtp.Message)
         return user
 
     async def get_otp_by_email(self, email: Email, db: AsyncSession) -> Optional[OtpResponse]:
         user = await self.user_repo.get_otp_by_email(email, db)
         if not user or not user.id:
-            raise UserNotFoundError(self.config.ApplicationMessages[self.config.CurrentLanguage]["UserNotFound"]["Key"])
+            raise UserNotFoundError(self.config.ApplicationMessages.en.UserNotFound.Message)
         if user.is_verified:
-            raise UserAlreadyVerifiedError(self.config.ApplicationMessages[self.config.CurrentLanguage]["UserAlreadyVerified"]["Key"])
+            raise UserAlreadyVerifiedError(self.config.ApplicationMessages.en.UserAlreadyVerified.Message)
         return user
 
     async def generate_user_registration_draft(self, user: UserBase) -> str:
@@ -327,33 +327,29 @@ class UserInteractor(UserService):
             return None
 
     async def create_access_token(self, user: UserResponse) -> str:
-        expires_delta = timedelta(minutes=15)
-        expire = datetime.utcnow() + expires_delta
-        
+        """Create a new access token for the user"""
+        expires_delta = timedelta(minutes=self.config.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode = {
-            "id": user.id,
+            "sub": str(user.id),
             "email": user.email,
-            "exp": expire
+            "exp": datetime.utcnow() + expires_delta
         }
-        
         return jwt.encode(
             to_encode,
-            self.config.AccessTokenSecret,
-            algorithm="HS256"
+            self.config.JWT_SECRET_KEY,
+            algorithm=self.config.JWT_ALGORITHM
         )
 
     async def create_refresh_token(self, user: UserResponse) -> str:
-        expires_delta = timedelta(days=7)
-        expire = datetime.utcnow() + expires_delta
-        
+        """Create a new refresh token for the user"""
+        expires_delta = timedelta(days=self.config.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
         to_encode = {
-            "id": user.id,
+            "sub": str(user.id),
             "email": user.email,
-            "exp": expire
+            "exp": datetime.utcnow() + expires_delta
         }
-        
         return jwt.encode(
             to_encode,
-            self.config.RefreshTokenSecret,
-            algorithm="HS256"
+            self.config.JWT_REFRESH_SECRET_KEY,
+            algorithm=self.config.JWT_ALGORITHM
         ) 
