@@ -11,4 +11,14 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at DATETIME NOT NULL
 );
 
+create table if not exists Roles (
+    id int primary key auto_increment,
+    role_key varchar(50) not null unique,
+    role_name varchar(50) not null unique
+);
+
+-- Insert default role only once 
+-- USER & ADMIN
+INSERT IGNORE INTO Roles (id, role_key, role_name)VALUES (1, 'PP_ADMIN', 'PP Admin'), (2, 'PP_USER', 'PP User');
+
 
