@@ -2,13 +2,13 @@ from fastapi import HTTPException
 from datetime import datetime, timedelta
 from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
-from model.user_model import UserCreate, UserResponse, StandardResponse
+from model.user_model import UserCreate, UserResponse
 from model.auth import Token, TokenData, RefreshToken
-from model.response_model import create_success_response, create_error_response
+from model.response_model import ApiResponse, create_success_response, create_error_response
 from config.config import Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
-from service.user_service import UserInteractor
+from service.user_service import UserInteractor, UserServiceError
 
 class AuthController:
     """
@@ -28,17 +28,11 @@ class AuthController:
         self.logger = logger
         self.cache_handler = cache_handler
 
-    async def signup(self, user: UserCreate, db: AsyncSession) -> StandardResponse:
+    async def signup(self, user: UserCreate, db: AsyncSession) -> ApiResponse:
         """Handles user signup process and returns authentication tokens."""
         try:
             # Create user in database
             created_user = await self.user_service.create_user(user, db)
-            if not created_user:
-                return create_error_response(
-                    code="USER_CREATION_FAILED",
-                    message="Failed to create user",
-                    details="User creation process failed"
-                )
 
             # Generate tokens
             access_token = await self.create_access_token(created_user)
@@ -55,25 +49,19 @@ class AuthController:
                 message="User created successfully",
                 data=token_data
             )
-        except Exception as e:
+        except UserServiceError as e:
             self.logger.error(f"Error in signup: {str(e)}")
             return create_error_response(
-                code="SIGNUP_ERROR",
-                message="Error during signup process",
-                details=str(e)
+                code=e.code,
+                message=e.message,
+                details=e.message
             )
 
-    async def login(self, token_data: TokenData, db: AsyncSession) -> StandardResponse:
+    async def login(self, token_data: TokenData, db: AsyncSession) -> ApiResponse:
         """Handles user login and returns authentication tokens."""
         try:
             # Verify credentials and get user
             user = await self.user_service.verify_credentials(token_data.email, token_data.password, db)
-            if not user:
-                return create_error_response(
-                    code="INVALID_CREDENTIALS",
-                    message="Invalid credentials",
-                    details="Email or password is incorrect"
-                )
 
             # Generate tokens
             access_token = await self.create_access_token(user)
@@ -90,25 +78,19 @@ class AuthController:
                 message="Login successful..",
                 data=token_data
             )
-        except Exception as e:
+        except UserServiceError as e:
             self.logger.error(f"Error in login: {str(e)}")
             return create_error_response(
-                code="LOGIN_ERROR",
-                message="Error during login process",
-                details=str(e)
+                code=e.code,
+                message=e.message,
+                details=e.message
             )
 
-    async def refresh_token(self, refresh_token: RefreshToken, db: AsyncSession) -> StandardResponse:
+    async def refresh_token(self, refresh_token: RefreshToken, db: AsyncSession) -> ApiResponse:
         """Refreshes the access token using a valid refresh token."""
         try:
             # Verify refresh token and get user
             user = await self.user_service.verify_refresh_token(refresh_token.refresh_token, db)
-            if not user:
-                return create_error_response(
-                    code="INVALID_REFRESH_TOKEN",
-                    message="Invalid refresh token",
-                    details="The refresh token is invalid or expired"
-                )
 
             # Generate new tokens
             access_token = await self.create_access_token(user)
@@ -125,12 +107,12 @@ class AuthController:
                 message="Token refreshed successfully",
                 data=token_data
             )
-        except Exception as e:
+        except UserServiceError as e:
             self.logger.error(f"Error in refresh_token: {str(e)}")
             return create_error_response(
-                code="REFRESH_TOKEN_ERROR",
-                message="Error during token refresh",
-                details=str(e)
+                code=e.code,
+                message=e.message,
+                details=e.message
             )
 
     async def create_access_token(self, user: UserResponse) -> str:

@@ -42,6 +42,10 @@ class MessageFormat(BaseModel):
 class ApplicationMessagesLang(BaseModel):
     UserNotFound: MessageFormat
     DuplicateUser: MessageFormat
+    InvalidCredentials: MessageFormat
+    InvalidToken: MessageFormat
+    TokenExpired: MessageFormat
+    InternalServerError: MessageFormat
 
 class ApplicationMessages(BaseModel):
     en: ApplicationMessagesLang

@@ -1,142 +1,99 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from jose import jwt
+from model.schemas.base import CustomBaseModel
+from model.response_model import ApiResponse, ResponseMeta, ResponseError
 
-class UserBase(BaseModel):
+class UserBase(CustomBaseModel):
     """Base model for user data"""
-    name: str
-    email: EmailStr
-    phone_no: int
+    name: str = Field(..., min_length=2, description="User's full name")
+    email: EmailStr = Field(..., description="User's email address")
+    phone_no: int = Field(..., description="User's phone number")
 
 class UserCreate(UserBase):
     """Model for user creation request"""
-    password: str
-    otp: Optional[str] = None
+    password: str = Field(..., min_length=6, description="User's password")
+    otp: Optional[str] = Field(None, description="One-time password for verification")
 
 class UserResponse(UserBase):
     """Model for user response data"""
-    id: str
-    is_verified: bool
-    created_at: datetime
-    updated_at: datetime
+    id: str = Field(..., description="User's unique identifier")
+    password: str = Field(..., description="User's hashed password")
+    is_verified: bool = Field(..., description="User's verification status")
+    is_active: bool = Field(True, description="User's active status")
+    created_at: datetime = Field(..., description="Account creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
         from_attributes = True
 
-class VerifyUser(BaseModel):
-    email: EmailStr
-    otp: str
-
-class OtpResponse(BaseModel):
-    email: EmailStr
-    otp: str
-    created_at: datetime
-    is_verified: bool
-
-class LoginRequest(BaseModel):
+class VerifyUser(CustomBaseModel):
     email: EmailStr = Field(..., description="User's email address")
-    password: str = Field(..., description="User's password")
+    otp: str = Field(..., min_length=6, max_length=6, description="One-time password")
 
-class Email(BaseModel):
+class OtpResponse(CustomBaseModel):
+    email: EmailStr = Field(..., description="User's email address")
+    otp: str = Field(..., description="Generated OTP")
+    created_at: datetime = Field(..., description="OTP creation timestamp")
+    is_verified: bool = Field(..., description="OTP verification status")
+
+class LoginRequest(CustomBaseModel):
+    email: EmailStr = Field(..., description="User's email address")
+    password: str = Field(..., min_length=6, description="User's password")
+
+class Email(CustomBaseModel):
     email: EmailStr = Field(..., description="User's email address")
 
-class Id(BaseModel):
+class Id(CustomBaseModel):
     id: str = Field(..., description="User's ID")
 
-class JwtCustomClaims(BaseModel):
-    id: str
-    email: str
-    exp: Optional[int] = None
-    iat: Optional[int] = None
+class JwtCustomClaims(CustomBaseModel):
+    id: str = Field(..., description="User's ID")
+    email: str = Field(..., description="User's email")
+    exp: Optional[int] = Field(None, description="Token expiration timestamp")
+    iat: Optional[int] = Field(None, description="Token issued at timestamp")
 
-class JwtCustomRefreshClaims(BaseModel):
-    id: str
-    email: str
-    exp: Optional[int] = None
-    iat: Optional[int] = None
+class JwtCustomRefreshClaims(CustomBaseModel):
+    id: str = Field(..., description="User's ID")
+    email: str = Field(..., description="User's email")
+    exp: Optional[int] = Field(None, description="Token expiration timestamp")
+    iat: Optional[int] = Field(None, description="Token issued at timestamp")
 
-class ErrorMessage(BaseModel):
-    message: str
+class ErrorMessage(CustomBaseModel):
+    message: str = Field(..., description="Error message")
 
-class HeaderId(BaseModel):
-    user_id: str
-    user_email: str
-    user_phone_no: str
-    user_name: Optional[str] = None
+class HeaderId(CustomBaseModel):
+    user_id: str = Field(..., description="User's ID")
+    user_email: str = Field(..., description="User's email")
+    user_phone_no: str = Field(..., description="User's phone number")
+    user_name: Optional[str] = Field(None, description="User's name")
 
-class StandardResponse(BaseModel):
-    """Standard response model for API responses"""
-    success: bool
-    message: str
-    data: Optional[dict] = None
-    error: Optional[dict] = None
-    meta: Optional[dict] = None
+class UserInfo(CustomBaseModel):
+    id: str = Field(..., description="User's ID")
+    email: str = Field(..., description="User's email")
+    name: str = Field(..., description="User's name")
+    is_verified: bool = Field(..., description="User's verification status")
 
-class ErrorInfo(BaseModel):
-    """Model for error information"""
-    code: str
-    message: str
-    details: Optional[str] = None
+class TokenInfo(CustomBaseModel):
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    expires_in: int = Field(..., description="Token expiration time in seconds")
 
-class MetaInfo(BaseModel):
-    """Model for metadata information"""
-    timestamp: datetime
-    version: str = "1.0"
-    trace_id: Optional[str] = None
+class SessionInfo(CustomBaseModel):
+    session_id: str = Field(..., description="Session identifier")
+    created_at: datetime = Field(..., description="Session creation timestamp")
+    expires_at: datetime = Field(..., description="Session expiration timestamp")
+    device_info: Optional[str] = Field(None, description="Device information")
+    ip_address: Optional[str] = Field(None, description="IP address")
 
-class UserInfo(BaseModel):
-    id: str
-    email: str
-    name: str
-    is_verified: bool
+class LoginResponse(CustomBaseModel):
+    user: UserInfo = Field(..., description="User information")
+    tokens: TokenInfo = Field(..., description="Authentication tokens")
+    last_login: datetime = Field(..., description="Last login timestamp")
+    session_info: SessionInfo = Field(..., description="Session information")
 
-class TokenInfo(BaseModel):
-    access_token: str
-    refresh_token: str
-    expires_in: int
-
-class SessionInfo(BaseModel):
-    session_id: str
-    created_at: datetime
-    expires_at: datetime
-    device_info: Optional[str] = None
-    ip_address: Optional[str] = None
-
-class LoginResponse(BaseModel):
-    user: UserInfo
-    tokens: TokenInfo
-    last_login: datetime
-    session_info: SessionInfo
-
-class EmailVerificationTemplateModel(BaseModel):
+class EmailVerificationTemplateModel(CustomBaseModel):
     subject: str = Field(..., description="Email subject")
     body: str = Field(..., description="Email body")
 
-def new_success_response(message: str, data: Optional[dict] = None) -> StandardResponse:
-    """Helper function to create a success response"""
-    return StandardResponse(
-        success=True,
-        message=message,
-        data=data,
-        meta=MetaInfo(
-            timestamp=datetime.now(),
-            version="1.0"
-        )
-    )
-
-def new_error_response(code: str, message: str, details: Optional[str] = None) -> StandardResponse:
-    """Helper function to create an error response"""
-    return StandardResponse(
-        success=False,
-        message=message,
-        error=ErrorInfo(
-            code=code,
-            message=message,
-            details=details
-        ),
-        meta=MetaInfo(
-            timestamp=datetime.now(),
-            version="1.0"
-        )
-    ) 

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends
 from typing import AsyncGenerator
-from model.user_model import UserCreate, UserResponse, StandardResponse
+from model.user_model import UserCreate, UserResponse
 from model.auth import Token, TokenData, RefreshToken
 from middleware.auth_middleware import auth_middleware
 from database import DatabaseConnection
 from controller.auth_controller import AuthController
 from controller.user_controller import UserController
+from model.response_model import ApiResponse
 
 def get_auth_router(auth_controller: AuthController, user_controller: UserController) -> APIRouter:
     router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -19,15 +20,15 @@ def get_auth_router(auth_controller: AuthController, user_controller: UserContro
         finally:
             await DatabaseConnection.release_connection(conn)
 
-    @router.post("/signup", response_model=StandardResponse)  # noqa
+    @router.post("/signup", response_model=ApiResponse)  # noqa
     async def signup(user: UserCreate, db=Depends(get_db)):
         return await auth_controller.signup(user, db)
 
-    @router.post("/login", response_model=StandardResponse)  # noqa
+    @router.post("/login", response_model=ApiResponse)  # noqa
     async def login(token_data: TokenData, db=Depends(get_db)):
         return await auth_controller.login(token_data, db)
 
-    @router.post("/refresh", response_model=StandardResponse)  # noqa
+    @router.post("/refresh", response_model=ApiResponse)  # noqa
     async def refresh_token(refresh_token: RefreshToken, db=Depends(get_db)):
         return await auth_controller.refresh_token(refresh_token, db)
 

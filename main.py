@@ -1,5 +1,6 @@
 # Import necessary libraries and modules
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from database import DatabaseConnection
 from database.redis import RedisConnection
 from config.config import load_config
@@ -9,9 +10,10 @@ from repository.user_repository import UserRepository
 from service.user_service import UserInteractor
 from controller.user_controller import UserController
 from controller.auth_controller import AuthController
-from middleware.request_middleware import RequestMiddleware
 from middleware.cors_middleware import default_cors_config, CORSMiddleware
+from middleware.logging_middleware import LoggingMiddleware
 from router.auth_router import get_auth_router
+from model.schemas.base import validation_exception_handler
 
 # Create an instance of the FastAPI application
 app = FastAPI(title="Authentication API")
@@ -22,8 +24,11 @@ config = load_config("config/config.yml")
 # Configure CORS using the middleware configuration
 app.add_middleware(CORSMiddleware, **default_cors_config.get_middleware())
 
-# Add request middleware for tracing and monitoring
-app.add_middleware(RequestMiddleware, slow_request_threshold=1.0)
+# Add logging middleware
+app.add_middleware(LoggingMiddleware)
+
+# Add custom validation exception handler
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 # Initialize application dependencies
 logger = Logger(name="auth_app")

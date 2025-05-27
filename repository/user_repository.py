@@ -10,6 +10,25 @@ from database import DatabaseConnection
 import aiomysql
 import bcrypt
 
+class RepositoryError(Exception):
+    """Base exception for repository errors"""
+    def __init__(self, message: str, code: str):
+        self.message = message
+        self.code = code
+        super().__init__(self.message)
+
+class DuplicateUserError(RepositoryError):
+    """Raised when attempting to create a user that already exists"""
+    pass
+
+class UserNotFoundError(RepositoryError):
+    """Raised when a user cannot be found"""
+    pass
+
+class InvalidCredentialsError(RepositoryError):
+    """Raised when user credentials are invalid"""
+    pass
+
 class Repository(ABC):
     @abstractmethod
     async def get_users(self, db) -> List[UserResponse]:pass
@@ -57,7 +76,7 @@ class UserRepository(Repository):
                 await cursor.execute("SELECT * FROM users WHERE email = %s", (user.email,))
                 existing_user = await cursor.fetchone()
                 if existing_user:
-                    raise Exception("User already exists.")
+                    raise DuplicateUserError("User already exists.", "DUPLICATE_USER")
 
                 # Hash password
                 hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
