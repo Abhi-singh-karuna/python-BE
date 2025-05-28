@@ -11,7 +11,6 @@ from config.config import load_config, Config
 from utils.logger import Logger
 from utils.email_service import EmailService
 from utils.otp_generator import generate_otp
-from sqlalchemy.ext.asyncio import AsyncSession
 from repository.user_repository import (
     UserRepository, RepositoryError, DuplicateUserError,
     UserNotFoundError, InvalidCredentialsError
@@ -28,34 +27,34 @@ class UserServiceError(Exception):
 
 class UserService(ABC):
     @abstractmethod
-    async def validate_user_verified(self, user_id: str, db: AsyncSession) -> Tuple[bool, Optional[UserBase]]:pass
+    async def validate_user_verified(self, user_id: str, db) -> Tuple[bool, Optional[UserBase]]:pass
 
     @abstractmethod
-    async def get_users(self, db: AsyncSession) -> List[UserBase]: pass
+    async def get_users(self, db) -> List[UserBase]: pass
 
     @abstractmethod
-    async def create_user(self, user: UserCreate, db: AsyncSession) -> Optional[UserResponse]: pass
+    async def create_user(self, user: UserCreate, db) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def get_user_by_email(self, email: str, db: AsyncSession) -> Optional[UserResponse]: pass
+    async def get_user_by_email(self, email: str, db) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def get_user_by_id(self, user_id: str, db: AsyncSession) -> Optional[UserResponse]: pass
+    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def verify_user_by_email(self, user_info: VerifyUser, db: AsyncSession) -> Optional[UserBase]: pass
+    async def verify_user_by_email(self, user_info: VerifyUser, db) -> Optional[UserBase]: pass
 
     @abstractmethod
-    async def get_otp_by_email(self, email: Email, db: AsyncSession) -> Optional[OtpResponse]: pass
+    async def get_otp_by_email(self, email: Email, db) -> Optional[OtpResponse]: pass
 
     @abstractmethod
     async def generate_user_registration_draft(self, user: UserBase) -> str: pass
 
     @abstractmethod
-    async def verify_credentials(self, email: str, password: str, db: AsyncSession) -> Optional[UserResponse]: pass
+    async def verify_credentials(self, email: str, password: str, db) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def verify_refresh_token(self, refresh_token: str, db: AsyncSession) -> Optional[UserResponse]: pass
+    async def verify_refresh_token(self, refresh_token: str, db) -> Optional[UserResponse]: pass
 
 class UserInteractor(UserService):
     def __init__(
@@ -68,19 +67,19 @@ class UserInteractor(UserService):
         self.logger = logger
         self.config = config
 
-    async def validate_user_verified(self, user_id: str, db: AsyncSession) -> Tuple[bool, Optional[UserBase]]:
+    async def validate_user_verified(self, user_id: str, db) -> Tuple[bool, Optional[UserBase]]:
         try:
             return await self.user_repo.validate_user_verified(user_id, db)
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def get_users(self, db: AsyncSession) -> List[UserBase]:
+    async def get_users(self, db) -> List[UserBase]:
         try:
             return await self.user_repo.get_users(db)
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def create_user(self, user: UserCreate, db: AsyncSession) -> Optional[UserResponse]:
+    async def create_user(self, user: UserCreate, db) -> Optional[UserResponse]:
         try:
             return await self.user_repo.create_user(user, db)
         except DuplicateUserError as e:
@@ -88,7 +87,7 @@ class UserInteractor(UserService):
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def get_user_by_email(self, email: str, db: AsyncSession) -> Optional[UserResponse]:
+    async def get_user_by_email(self, email: str, db) -> Optional[UserResponse]:
         try:
             return await self.user_repo.get_user_by_email(email, db)
         except UserNotFoundError as e:
@@ -96,7 +95,7 @@ class UserInteractor(UserService):
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def get_user_by_id(self, user_id: str, db: AsyncSession) -> Optional[UserResponse]:
+    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]:
         try:
             return await self.user_repo.get_user_by_id(user_id, db)
         except UserNotFoundError as e:
@@ -104,7 +103,7 @@ class UserInteractor(UserService):
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def verify_user_by_email(self, user_info: VerifyUser, db: AsyncSession) -> Optional[UserBase]:
+    async def verify_user_by_email(self, user_info: VerifyUser, db) -> Optional[UserBase]:
         try:
             return await self.user_repo.verify_user_by_email(user_info, db)
         except (UserNotFoundError, InvalidCredentialsError) as e:
@@ -112,7 +111,7 @@ class UserInteractor(UserService):
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def get_otp_by_email(self, email: Email, db: AsyncSession) -> Optional[OtpResponse]:
+    async def get_otp_by_email(self, email: Email, db) -> Optional[OtpResponse]:
         try:
             return await self.user_repo.get_otp_by_email(email, db)
         except UserNotFoundError as e:
@@ -147,7 +146,7 @@ class UserInteractor(UserService):
 
         return template.render(data=data)
 
-    async def verify_user(self, email: str, otp: str, db: AsyncSession) -> OtpResponse:
+    async def verify_user(self, email: str, otp: str, db) -> OtpResponse:
         # Get user by email
         user = await self.user_repo.get_user_by_email(email, db)
         if not user:
@@ -171,33 +170,26 @@ class UserInteractor(UserService):
             is_verified=True
         )
 
-    async def verify_credentials(self, email: str, password: str, db: AsyncSession) -> Optional[UserResponse]:
+    async def verify_credentials(self, email: str, password: str, db) -> Optional[UserResponse]:
         try:
-            # Get user with password from repository
             user_with_password = await self.user_repo.get_user_by_email_with_password(email, db)
-            
-            # Check if user exists
             if not user_with_password:
                 raise UserServiceError(
                     self.config.ApplicationMessages.en.InvalidCredentials.Message,
                     self.config.ApplicationMessages.en.InvalidCredentials.Key
                 )
-            
-            # Verify password
             if not bcrypt.checkpw(password.encode('utf-8'), user_with_password['password'].encode('utf-8')):
                 raise UserServiceError(
                     self.config.ApplicationMessages.en.InvalidCredentials.Message,
                     self.config.ApplicationMessages.en.InvalidCredentials.Key
                 )
-
-            # Return user without password
             return await self.get_user_by_email(email, db)
         except UserNotFoundError as e:
             raise UserServiceError(e.message, e.code)
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def verify_refresh_token(self, refresh_token: str, db: AsyncSession) -> Optional[UserResponse]:
+    async def verify_refresh_token(self, refresh_token: str, db) -> Optional[UserResponse]:
         try:
             # Decode refresh token
             payload = jwt.decode(
@@ -227,7 +219,7 @@ class UserInteractor(UserService):
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def login_for_access_token(self, email: str, password: str, db: AsyncSession) -> Token:
+    async def login_for_access_token(self, email: str, password: str, db) -> Token:
         # Get user by email
         user = await self.user_repo.get_user_by_email(email, db)
         if not user:
@@ -249,7 +241,7 @@ class UserInteractor(UserService):
             token_type="bearer"
         )
 
-    async def refresh_token(self, refresh_token: RefreshToken, db: AsyncSession) -> Token:
+    async def refresh_token(self, refresh_token: RefreshToken, db) -> Token:
         try:
             # Decode refresh token
             payload = jwt.decode(

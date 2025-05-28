@@ -1,7 +1,6 @@
 from fastapi import HTTPException
 from datetime import datetime, timedelta
 from jose import jwt
-from sqlalchemy.ext.asyncio import AsyncSession
 from model.user_model import UserCreate, UserResponse
 from model.auth import Token, TokenData, RefreshToken
 from model.response_model import ApiResponse, create_success_response, create_error_response
@@ -28,7 +27,7 @@ class AuthController:
         self.logger = logger
         self.cache_handler = cache_handler
 
-    async def signup(self, user: UserCreate, db: AsyncSession) -> ApiResponse:
+    async def signup(self, user: UserCreate, db) -> ApiResponse:
         """Handles user signup process and returns authentication tokens."""
         try:
             # Create user in database
@@ -57,7 +56,7 @@ class AuthController:
                 details=e.message
             )
 
-    async def login(self, token_data: TokenData, db: AsyncSession) -> ApiResponse:
+    async def login(self, token_data: TokenData, db) -> ApiResponse:
         """Handles user login and returns authentication tokens."""
         try:
             # Verify credentials and get user
@@ -86,7 +85,7 @@ class AuthController:
                 details=e.message
             )
 
-    async def refresh_token(self, refresh_token: RefreshToken, db: AsyncSession) -> ApiResponse:
+    async def refresh_token(self, refresh_token: RefreshToken, db) -> ApiResponse:
         """Refreshes the access token using a valid refresh token."""
         try:
             # Verify refresh token and get user

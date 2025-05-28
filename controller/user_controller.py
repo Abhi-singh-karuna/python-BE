@@ -31,7 +31,7 @@ class UserController:
         self.logger = logger
         self.cache_handler = cache_handler
 
-    async def get_users(self, db: AsyncSession) -> List[UserResponse]:
+    async def get_users(self, db) -> List[UserResponse]:
         """Retrieves all users from the database."""
         try:
             users = await self.user_service.get_users(db)
@@ -40,7 +40,7 @@ class UserController:
             self.logger.error(f"Error getting users: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def create_user(self, user: UserCreate, db: AsyncSession) -> UserResponse:
+    async def create_user(self, user: UserCreate, db) -> UserResponse:
         """Creates a new user in the system."""
         try:
             result = await self.user_service.create_user(user, db)
@@ -51,7 +51,7 @@ class UserController:
             self.logger.error(f"Error in create_user: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def get_user_by_email(self, email: Email, db: AsyncSession) -> UserResponse:
+    async def get_user_by_email(self, email: Email, db) -> UserResponse:
         """Retrieves a user by their email address."""
         try:
             user = await self.user_service.get_user_by_email(email, db)
@@ -66,7 +66,7 @@ class UserController:
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def get_otp_by_email(self, email: Email, db: AsyncSession) -> OtpResponse:
+    async def get_otp_by_email(self, email: Email, db) -> OtpResponse:
         """Generates and sends OTP to user's email for verification."""
         try:
             otp = await self.user_service.get_otp_by_email(email, db)
@@ -86,7 +86,7 @@ class UserController:
                 )
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def verify_user_by_email(self, user_info: VerifyUser, db: AsyncSession) -> UserResponse:
+    async def verify_user_by_email(self, user_info: VerifyUser, db) -> UserResponse:
         """Verifies a user's email using OTP."""
         try:
             user = await self.user_service.verify_user_by_email(user_info, db)
@@ -111,7 +111,7 @@ class UserController:
                 )
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def get_user(self, db: AsyncSession, current_user: dict = Depends(auth_middleware)) -> UserResponse:
+    async def get_user(self, db, current_user: dict = Depends(auth_middleware)) -> UserResponse:
         """Retrieves the current user's information."""
         try:
             user = await self.user_service.get_user_by_id(current_user["id"], db)
