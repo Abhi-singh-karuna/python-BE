@@ -7,18 +7,23 @@ CREATE TABLE IF NOT EXISTS users (
     phone_no VARCHAR(20),
     is_verified BOOLEAN DEFAULT TRUE,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
 );
 
-create table if not exists Roles (
-    id int primary key auto_increment,
-    role_key varchar(50) not null unique,
-    role_name varchar(50) not null unique
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,
+    role_key VARCHAR(50) NOT NULL UNIQUE,
+    role_name VARCHAR(50) NOT NULL UNIQUE
 );
 
--- Insert default role only once 
--- USER & ADMIN
-INSERT IGNORE INTO Roles (id, role_key, role_name)VALUES (1, 'PP_ADMIN', 'PP Admin'), (2, 'PP_USER', 'PP User');
+-- Insert default roles only if they don't exist
+INSERT INTO roles (role_key, role_name)
+SELECT 'PP_ADMIN', 'PP Admin'
+WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_key = 'PP_ADMIN');
+
+INSERT INTO roles (role_key, role_name)
+SELECT 'PP_USER', 'PP User'
+WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_key = 'PP_USER');
 
 

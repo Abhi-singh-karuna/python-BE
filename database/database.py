@@ -2,21 +2,22 @@
 database.py
 
 This module provides a DatabaseConnection class that manages the connection pool
-to a MySQL database using aiomysql. It includes methods for loading configuration,
+to a PostgreSQL database using asyncpg. It includes methods for loading configuration,
 executing SQL files, and managing database connections in an asynchronous context.
 """
 
-import aiomysql
+import asyncpg
 from pathlib import Path
 from typing import Optional
 from utils.logger import Logger
 from config.config import load_config
+import re
 
 logger = Logger(name="database")
 
 class DatabaseConnection:
     # A class to manage the database connection pool.
-    _pool: Optional[aiomysql.Pool] = None  # Single shared instance
+    _pool: Optional[asyncpg.Pool] = None  # Single shared instance
     _config = None
 
     @classmethod
@@ -34,7 +35,7 @@ class DatabaseConnection:
             return f.read()
 
     @classmethod
-    async def get_pool(cls) -> aiomysql.Pool:
+    async def get_pool(cls) -> asyncpg.Pool:
         # Get the database connection pool, creating it if it doesn't exist.
         if cls._pool is None:
             config = cls._load_config()
@@ -43,19 +44,17 @@ class DatabaseConnection:
                 'port': config.sql.write.port,
                 'user': config.sql.write.user,
                 'password': config.sql.write.password,
-                'db': config.sql.write.database,
-                'charset': 'utf8mb4',
-                'autocommit': True
-            }
-            pool_config = {
-                'minsize': 1,
-                'maxsize': 10,
-                'pool_recycle': 3600,
-                'echo': False
+                'database': config.sql.write.database,
+                'min_size': 1,
+                'max_size': 10,
+                'command_timeout': 60.0,
+                'server_settings': {
+                    'application_name': 'activity_app'
+                }
             }
             try:
-                cls._pool = await aiomysql.create_pool(**db_config, **pool_config)
-                logger.info("Database connection pool created", pool_size=pool_config['maxsize'])
+                cls._pool = await asyncpg.create_pool(**db_config)
+                logger.info("Database connection pool created", pool_size=db_config['max_size'])
             except Exception as e:
                 logger.error("Failed to create database pool", error=str(e))
                 raise
@@ -65,8 +64,7 @@ class DatabaseConnection:
     async def close_pool(cls):
         # Close the database connection pool.
         if cls._pool is not None:
-            cls._pool.close()
-            await cls._pool.wait_closed()
+            await cls._pool.close()
             cls._pool = None
             logger.info("Database connection pool closed")
 
@@ -89,49 +87,90 @@ class DatabaseConnection:
             await pool.release(conn)
 
     @classmethod
+    async def fetch(cls, query: str, *args):
+        conn = await cls.get_connection()
+        try:
+            return await conn.fetch(query, *args)
+        except Exception as e:
+            logger.error("Fetch query failed", error=str(e), query=query)
+            raise
+        finally:
+            await cls.release_connection(conn)
+
+    @classmethod
+    async def fetchrow(cls, query: str, *args):
+        conn = await cls.get_connection()
+        try:
+            return await conn.fetchrow(query, *args)
+        except Exception as e:
+            logger.error("Fetchrow query failed", error=str(e), query=query)
+            raise
+        finally:
+            await cls.release_connection(conn)
+
+    @classmethod
+    async def execute(cls, query: str, *args):
+        conn = await cls.get_connection()
+        try:
+            return await conn.execute(query, *args)
+        except Exception as e:
+            logger.error("Execute query failed", error=str(e), query=query)
+            raise
+        finally:
+            await cls.release_connection(conn)
+
+    @classmethod
     async def init_db(cls):
         # Initialize the database schema by executing SQL files.
         conn = None
         try:
             conn = await cls.get_connection()
-            async with conn.cursor() as cursor:
-                async def execute_sql_file(filename: str, context: str, is_procedure=False):
-                    # Execute an SQL file, handling procedures and triggers if specified.
-                    sql = cls._load_sql_file(filename)
-                    if is_procedure:
-                        # This handles multi-line stored procedures and triggers
-                        blocks = sql.split('DELIMITER ;')
-                        for block in blocks:
-                            statements = block.strip().split(';')
-                            compound_statement = ""
-                            for stmt in statements:
-                                if stmt.strip():
-                                    compound_statement += stmt.strip() + ";"
-                            if compound_statement.strip():
-                                try:
-                                    await cursor.execute(compound_statement)
-                                except Exception as e:
-                                    if "already exists" not in str(e).lower():
-                                        raise
-                                    logger.warning(f"{context} already exists or failed: {str(e)}")
-                    else:
-                        statements = [stmt.strip() for stmt in sql.split(';') if stmt.strip()]
-                        for statement in statements:
-                            try:
-                                await cursor.execute(statement)
-                            except Exception as e:
-                                if "already exists" not in str(e).lower():
-                                    raise
-                                logger.warning(f"{context} already exists or failed: {str(e)}")
+            async def execute_sql_file(filename: str, context: str, is_procedure=False):
+                # Execute an SQL file, handling procedures and triggers if specified.
+                sql = cls._load_sql_file(filename)
+                if is_procedure:
+                    # FIX: Only match CREATE ... $$ ... $$; blocks that start at the beginning of a line (ignoring comments and whitespace)
+                    # This prevents comments and DROP statements from being included in the block, which caused syntax errors.
+                    pattern = re.compile(r'(?im)^\s*(CREATE[\s\S]+?\$\$[\s\S]+?\$\$;)', re.MULTILINE)
+                    blocks = pattern.findall(sql)
+                    # Remove these blocks from the SQL string
+                    sql_remaining = pattern.sub('', sql)
+                    # Execute CREATE ... $$ ... $$; blocks
+                    for block in blocks:
+                        try:
+                            logger.info(f"Executing block: {block}")  # Debug log
+                            await conn.execute(block)
+                        except Exception as e:
+                            if "already exists" not in str(e).lower():
+                                raise
+                            logger.warning(f"{context} already exists or failed: {str(e)}")
+                    # Execute other statements (like DROP ...;)
+                    statements = [stmt.strip() for stmt in sql_remaining.split(';') if stmt.strip()]
+                    for statement in statements:
+                        try:
+                            logger.info(f"Executing statement: {statement}")  # Debug log
+                            await conn.execute(statement)
+                        except Exception as e:
+                            if "already exists" not in str(e).lower():
+                                raise
+                            logger.warning(f"{context} already exists or failed: {str(e)}")
+                else:
+                    statements = [stmt.strip() for stmt in sql.split(';') if stmt.strip()]
+                    for statement in statements:
+                        try:
+                            await conn.execute(statement)
+                        except Exception as e:
+                            if "already exists" not in str(e).lower():
+                                raise
+                            logger.warning(f"{context} already exists or failed: {str(e)}")
 
-                # Create tables
-                await execute_sql_file('init.sql', context="Table/Index")
+            # Create tables
+            await execute_sql_file('init.sql', context="Table/Index")
 
-                # Create procedures, functions, triggers
-                await execute_sql_file('procedures.sql', context="Procedure/Function/Trigger", is_procedure=True)
+            # Create procedures, functions, triggers
+            await execute_sql_file('procedures.sql', context="Procedure/Function/Trigger", is_procedure=True)
 
-                await conn.commit()
-                logger.info("Database tables and procedures initialized successfully.")
+            logger.info("Database tables and procedures initialized successfully.")
 
         except Exception as e:
             logger.error("Failed to initialize database schema", error=str(e))

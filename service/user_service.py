@@ -176,6 +176,13 @@ class UserInteractor(UserService):
             # Get user with password from repository
             user_with_password = await self.user_repo.get_user_by_email_with_password(email, db)
             
+            # Check if user exists
+            if not user_with_password:
+                raise UserServiceError(
+                    self.config.ApplicationMessages.en.InvalidCredentials.Message,
+                    self.config.ApplicationMessages.en.InvalidCredentials.Key
+                )
+            
             # Verify password
             if not bcrypt.checkpw(password.encode('utf-8'), user_with_password['password'].encode('utf-8')):
                 raise UserServiceError(

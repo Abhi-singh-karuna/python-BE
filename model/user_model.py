@@ -9,7 +9,7 @@ class UserBase(CustomBaseModel):
     """Base model for user data"""
     name: str = Field(..., min_length=2, description="User's full name")
     email: EmailStr = Field(..., description="User's email address")
-    phone_no: int = Field(..., description="User's phone number")
+    phone_no: str = Field(..., description="User's phone number")
 
 class UserCreate(UserBase):
     """Model for user creation request"""

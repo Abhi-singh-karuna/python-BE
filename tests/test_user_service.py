@@ -36,7 +36,7 @@ async def test_create_user_success(user_service, mock_user_repo):
         name="Test User",
         email="test@example.com",
         password="password123",
-        phone_no=1234567890
+        phone_no="1234567890"
     )
     
     mock_user_repo.create_user = AsyncMock(return_value=UserResponse(
@@ -76,7 +76,7 @@ async def test_login_invalid_credentials(user_service, mock_user_repo):
         id="1",
         name="Test User",
         email=email,
-        phone_no=1234567890,
+        phone_no="1234567890",
         is_verified=True
     ))
     
