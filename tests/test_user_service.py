@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import Mock, AsyncMock
 from service.user_service import UserInteractor, UserNotFoundError, InvalidCredentialsError
 from model.user_model import UserCreate, UserResponse
-from datetime import datetime
 
 @pytest.fixture
 def mock_user_repo():

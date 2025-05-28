@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from config.config import load_config, Config
+from config.config import Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
 import uuid
 from datetime import datetime
-from model.user_model import UserBase, UserCreate, UserResponse, VerifyUser, OtpResponse
+from model.user_model import UserCreate, UserResponse, VerifyUser, OtpResponse
 from database import DatabaseConnection
 import bcrypt
 from .queries import (
@@ -40,17 +40,17 @@ class InvalidCredentialsError(RepositoryError):
 
 class Repository(ABC):
     @abstractmethod
-    async def get_users(self, db) -> List[UserResponse]:pass
+    async def get_users(self) -> List[UserResponse]:pass
     @abstractmethod
-    async def create_user(self, user: UserCreate, db) -> Optional[UserResponse]:pass
+    async def create_user(self, user: UserCreate) -> Optional[UserResponse]:pass
     @abstractmethod
-    async def get_user_by_email(self, email: str, db) -> Optional[UserResponse]:pass
+    async def get_user_by_email(self, email: str) -> Optional[UserResponse]:pass
     @abstractmethod
-    async def verify_user_by_email(self, verify_user: VerifyUser, db) -> Optional[UserResponse]:pass
+    async def verify_user_by_email(self, verify_user: VerifyUser) -> Optional[UserResponse]:pass
     @abstractmethod
-    async def get_otp_by_email(self, email: str, db) -> Optional[OtpResponse]:pass
+    async def get_otp_by_email(self, email: str) -> Optional[OtpResponse]:pass
     @abstractmethod
-    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]:pass
+    async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:pass
 
 class UserRepository(Repository):
     def __init__(self, logger: Logger, config: Config, redis_client: CacheHandler):
@@ -58,7 +58,7 @@ class UserRepository(Repository):
         self.config = config
         self.redis_client = redis_client
 
-    async def get_users(self, db) -> List[UserResponse]:
+    async def get_users(self) -> List[UserResponse]:
         try:
             rows = await DatabaseConnection.fetch(GET_ALL_USERS)
             return [UserResponse(**user) for user in rows]
@@ -66,7 +66,7 @@ class UserRepository(Repository):
             self.logger.error(f"Error getting users: {str(e)}")
             raise
 
-    async def create_user(self, user: UserCreate, db) -> Optional[UserResponse]:
+    async def create_user(self, user: UserCreate) -> Optional[UserResponse]:
         """
         Creates a new user in the database.
         
@@ -109,7 +109,7 @@ class UserRepository(Repository):
             self.logger.error(f"Error creating user: {str(e)}")
             raise
 
-    async def get_user_by_email(self, email: str, db) -> Optional[UserResponse]:
+    async def get_user_by_email(self, email: str) -> Optional[UserResponse]:
         """
         Retrieves a user by their email address.
         
@@ -127,7 +127,7 @@ class UserRepository(Repository):
             self.logger.error(f"Error getting user by email: {str(e)}")
             raise
 
-    async def verify_user_by_email(self, verify_user: VerifyUser, db) -> Optional[UserResponse]:
+    async def verify_user_by_email(self, verify_user: VerifyUser) -> Optional[UserResponse]:
         try:
             # First verify the OTP
             otp = await DatabaseConnection.fetchrow(VERIFY_USER_OTP, verify_user.email, verify_user.otp)
@@ -148,7 +148,7 @@ class UserRepository(Repository):
             self.logger.error(f"Error verifying user: {str(e)}")
             raise
 
-    async def get_otp_by_email(self, email: str, db) -> Optional[OtpResponse]:
+    async def get_otp_by_email(self, email: str) -> Optional[OtpResponse]:
         try:
             row = await DatabaseConnection.fetchrow(GET_OTP_BY_EMAIL, email)
             if not row:
@@ -162,7 +162,7 @@ class UserRepository(Repository):
             self.logger.error(f"Error getting OTP: {str(e)}")
             raise
 
-    async def get_user_by_id(self, user_id: str, db) -> Optional[UserResponse]:
+    async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
         """
         Retrieves a user by their ID.
         
@@ -180,13 +180,12 @@ class UserRepository(Repository):
             self.logger.error(f"Error getting user by id: {str(e)}")
             raise
 
-    async def get_user_by_email_with_password(self, email: str, db) -> Optional[dict]:
+    async def get_user_by_email_with_password(self, email: str) -> Optional[dict]:
         """
         Retrieves a user by their email address, including password.
         
         Args:
             email: User's email address
-            db: Database connection (kept for interface compatibility)
             
         Returns:
             Dictionary containing user data including password if user is found, None otherwise

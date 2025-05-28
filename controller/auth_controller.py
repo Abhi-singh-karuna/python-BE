@@ -1,8 +1,7 @@
-from fastapi import HTTPException
 from datetime import datetime, timedelta
 from jose import jwt
 from model.user_model import UserCreate, UserResponse
-from model.auth import Token, TokenData, RefreshToken
+from model.auth import TokenData, RefreshToken
 from model.response_model import ApiResponse, create_success_response, create_error_response
 from config.config import Config
 from utils.logger import Logger
@@ -27,11 +26,11 @@ class AuthController:
         self.logger = logger
         self.cache_handler = cache_handler
 
-    async def signup(self, user: UserCreate, db) -> ApiResponse:
+    async def signup(self, user: UserCreate) -> ApiResponse:
         """Handles user signup process and returns authentication tokens."""
         try:
             # Create user in database
-            created_user = await self.user_service.create_user(user, db)
+            created_user = await self.user_service.create_user(user)
 
             # Generate tokens
             access_token = await self.create_access_token(created_user)
@@ -56,11 +55,11 @@ class AuthController:
                 details=e.message
             )
 
-    async def login(self, token_data: TokenData, db) -> ApiResponse:
+    async def login(self, token_data: TokenData) -> ApiResponse:
         """Handles user login and returns authentication tokens."""
         try:
             # Verify credentials and get user
-            user = await self.user_service.verify_credentials(token_data.email, token_data.password, db)
+            user = await self.user_service.verify_credentials(token_data.email, token_data.password)
 
             # Generate tokens
             access_token = await self.create_access_token(user)
@@ -85,11 +84,11 @@ class AuthController:
                 details=e.message
             )
 
-    async def refresh_token(self, refresh_token: RefreshToken, db) -> ApiResponse:
+    async def refresh_token(self, refresh_token: RefreshToken) -> ApiResponse:
         """Refreshes the access token using a valid refresh token."""
         try:
             # Verify refresh token and get user
-            user = await self.user_service.verify_refresh_token(refresh_token.refresh_token, db)
+            user = await self.user_service.verify_refresh_token(refresh_token.refresh_token)
 
             # Generate new tokens
             access_token = await self.create_access_token(user)
