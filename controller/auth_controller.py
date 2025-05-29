@@ -32,20 +32,20 @@ class AuthController:
             # Create user in database
             created_user = await self.user_service.create_user(user)
 
-            # Generate tokens
-            access_token = await self.create_access_token(created_user)
-            refresh_token = await self.create_refresh_token(created_user)
+            # # Generate tokens
+            # access_token = await self.create_access_token(created_user)
+            # refresh_token = await self.create_refresh_token(created_user)
 
-            token_data = {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "token_type": "bearer",
-                "expires_in": 3600
-            }
+            # token_data = {
+            #     "access_token": access_token,
+            #     "refresh_token": refresh_token,
+            #     "token_type": "bearer",
+            #     "expires_in": 3600
+            # }
 
             return create_success_response(
-                message="User created successfully",
-                data=token_data
+                message="User created successfully"
+                # data=token_data
             )
         except UserServiceError as e:
             self.logger.error(f"Error in signup: {str(e)}")

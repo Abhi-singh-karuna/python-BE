@@ -1,17 +1,10 @@
-from fastapi import HTTPException, Depends
-from typing import List, Optional
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from model.user_model import (
-    Email, Id, VerifyUser, UserInfo, UserCreate, UserResponse,
-    OtpResponse
-)
+from model.user_model import ( Email, VerifyUser, UserCreate, CurrentUser)
 from model.response_model import create_success_response, create_error_response, ApiResponse
 from config.config import Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
-from service.user_service import UserInteractor
-from middleware.auth_middleware import auth_middleware
+from service.user_service import UserInteractor, UserServiceError
 
 class UserController:
     """
@@ -31,95 +24,143 @@ class UserController:
         self.logger = logger
         self.cache_handler = cache_handler
 
-    async def get_users(self, db) -> List[UserResponse]:
+    async def get_users(self, db) -> ApiResponse:
         """Retrieves all users from the database."""
         try:
             users = await self.user_service.get_users(db)
-            return users
+            return create_success_response(
+                message="Users retrieved successfully",
+                data={"users": [user.model_dump() for user in users]}
+            )
         except Exception as e:
             self.logger.error(f"Error getting users: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e))
+            return create_error_response(
+                code="GET_USERS_ERROR",
+                message=str(e)
+            )
 
-    async def create_user(self, user: UserCreate, db) -> UserResponse:
+    async def create_user(self, user: UserCreate, db) -> ApiResponse:
         """Creates a new user in the system."""
         try:
             result = await self.user_service.create_user(user, db)
             if not result:
-                raise HTTPException(status_code=400, detail="Failed to create user")
-            return result
+                return create_error_response(
+                    code="CREATE_USER_ERROR",
+                    message="Failed to create user"
+                )
+            return create_success_response(
+                message="User created successfully",
+                data=result.model_dump()
+            )
+        except UserServiceError as e:
+            self.logger.error(f"Error in create_user: {str(e)}")
+            return create_error_response(
+                code=e.code,
+                message=e.message
+            )
         except Exception as e:
             self.logger.error(f"Error in create_user: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e))
+            return create_error_response(
+                code="CREATE_USER_ERROR",
+                message=str(e)
+            )
 
-    async def get_user_by_email(self, email: Email, db) -> UserResponse:
+    async def get_user_by_email(self, email: Email) -> ApiResponse:
         """Retrieves a user by their email address."""
         try:
-            user = await self.user_service.get_user_by_email(email, db)
+            user = await self.user_service.get_user_by_email(email.email)
             if not user:
-                raise HTTPException(
-                    status_code=404,
-                    detail=self.config.ApplicationMessages.en.UserNotFound.Message
+                return create_error_response(
+                    code="USER_NOT_FOUND",
+                    message=self.config.ApplicationMessages.en.UserNotFound.Message
                 )
-            return user
-        except HTTPException:
-            raise
+            return create_success_response(
+                message="User retrieved successfully",
+                data=user.model_dump()
+            )
+        except UserServiceError as e:
+            return create_error_response(
+                code=e.code,
+                message=e.message
+            )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            return create_error_response(
+                code="GET_USER_ERROR",
+                message=str(e)
+            )
 
-    async def get_otp_by_email(self, email: Email, db) -> OtpResponse:
+    async def get_otp_by_email(self, email: Email, db) -> ApiResponse:
         """Generates and sends OTP to user's email for verification."""
         try:
             otp = await self.user_service.get_otp_by_email(email, db)
             if not otp:
-                raise HTTPException(
-                    status_code=404,
-                    detail=self.config.ApplicationMessages.en.UserNotFound.Message
+                return create_error_response(
+                    code="USER_NOT_FOUND",
+                    message=self.config.ApplicationMessages.en.UserNotFound.Message
                 )
-            return otp
-        except HTTPException:
-            raise
-        except Exception as e:
+            return create_success_response(
+                message="OTP generated successfully",
+                data=otp.model_dump()
+            )
+        except UserServiceError as e:
             if "USER_ALREADY_VERIFIED" in str(e):
-                raise HTTPException(
-                    status_code=400,
-                    detail=self.config.ApplicationMessages.en.UserAlreadyVerified.Message
+                return create_error_response(
+                    code="USER_ALREADY_VERIFIED",
+                    message=self.config.ApplicationMessages.en.UserAlreadyVerified.Message
                 )
-            raise HTTPException(status_code=500, detail=str(e))
+            return create_error_response(
+                code=e.code,
+                message=e.message
+            )
+        except Exception as e:
+            return create_error_response(
+                code="GET_OTP_ERROR",
+                message=str(e)
+            )
 
-    async def verify_user_by_email(self, user_info: VerifyUser, db) -> UserResponse:
+    async def verify_user_by_email(self, user_info: VerifyUser, db) -> ApiResponse:
         """Verifies a user's email using OTP."""
         try:
             user = await self.user_service.verify_user_by_email(user_info, db)
             if not user:
-                raise HTTPException(
-                    status_code=404,
-                    detail=self.config.ApplicationMessages[self.config.CurrentLanguage]["UserNotFound"]["Message"]
+                return create_error_response(
+                    code="USER_NOT_FOUND",
+                    message=self.config.ApplicationMessages[self.config.CurrentLanguage]["UserNotFound"]["Message"]
                 )
-            return user
-        except HTTPException:
-            raise
-        except Exception as e:
+            return create_success_response(
+                message="User verified successfully",
+                data=user.model_dump()
+            )
+        except UserServiceError as e:
             if "USER_ALREADY_VERIFIED" in str(e):
-                raise HTTPException(
-                    status_code=400,
-                    detail=self.config.ApplicationMessages[self.config.CurrentLanguage]["UserAlreadyVerified"]["Message"]
+                return create_error_response(
+                    code="USER_ALREADY_VERIFIED",
+                    message=self.config.ApplicationMessages[self.config.CurrentLanguage]["UserAlreadyVerified"]["Message"]
                 )
             if "OTP_UN_MATCH_ERROR" in str(e):
-                raise HTTPException(
-                    status_code=400,
-                    detail=self.config.ApplicationMessages[self.config.CurrentLanguage]["OtpUnMatchError"]["Message"]
+                return create_error_response(
+                    code="OTP_UN_MATCH_ERROR",
+                    message=self.config.ApplicationMessages[self.config.CurrentLanguage]["OtpUnMatchError"]["Message"]
                 )
-            raise HTTPException(status_code=500, detail=str(e))
-
-    async def get_user(self, db, current_user: dict = Depends(auth_middleware)) -> UserResponse:
-        """Retrieves the current user's information."""
-        try:
-            user = await self.user_service.get_user_by_id(current_user["id"], db)
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
-            return user
-        except HTTPException:
-            raise
+            return create_error_response(
+                code=e.code,
+                message=e.message
+            )
         except Exception as e:
-            self.logger.error(f"Error in get_user: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e)) 
+            return create_error_response(
+                code="VERIFY_USER_ERROR",
+                message=str(e)
+            )
+
+    async def get_user(self, current_user: CurrentUser) -> ApiResponse:
+        """Retrieves the current user's information."""
+        success, user, error = await self.user_service.get_user_by_id(current_user.id)
+        if not success:
+            return create_error_response(
+                code="USER_NOT_FOUND",
+                message=error
+            )
+        return create_success_response(
+            message="User retrieved successfully",
+            data=user.model_dump()
+        )

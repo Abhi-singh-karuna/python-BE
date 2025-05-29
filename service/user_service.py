@@ -37,7 +37,7 @@ class UserService(ABC):
     async def get_user_by_email(self, email: str) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]: pass
+    async def get_user_by_id(self, user_id: str) -> Tuple[bool, Optional[UserResponse], Optional[str]]: pass
 
     @abstractmethod
     async def verify_user_by_email(self, user_info: VerifyUser) -> Optional[UserBase]: pass
@@ -93,13 +93,8 @@ class UserInteractor(UserService):
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 
-    async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
-        try:
-            return await self.user_repo.get_user_by_id(user_id)
-        except UserNotFoundError as e:
-            raise UserServiceError(e.message, e.code)
-        except RepositoryError as e:
-            raise UserServiceError(e.message, e.code)
+    async def get_user_by_id(self, user_id: str) -> Tuple[bool, Optional[UserResponse], Optional[str]]:
+        return await self.user_repo.get_user_by_id(user_id)
 
     async def verify_user_by_email(self, user_info: VerifyUser) -> Optional[UserBase]:
         try:

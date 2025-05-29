@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends
-from typing import AsyncGenerator
-from model.user_model import UserCreate, UserResponse
+from model.user_model import UserCreate, UserResponse , CurrentUser
 from model.auth import Token, TokenData, RefreshToken
 from middleware.auth_middleware import auth_middleware
 from controller.auth_controller import AuthController
-from controller.user_controller import UserController
+from controller.user_controller import UserController , Email
 from model.response_model import ApiResponse
 
 def get_auth_router(auth_controller: AuthController, user_controller: UserController) -> APIRouter:
@@ -23,8 +22,12 @@ def get_auth_router(auth_controller: AuthController, user_controller: UserContro
     async def refresh_token(refresh_token: RefreshToken):
         return await auth_controller.refresh_token(refresh_token)
 
-    @router.get("/user", response_model=UserResponse)  # noqa
-    async def get_user(current_user: dict = Depends(auth_middleware)):
+    @router.get("/user", response_model=ApiResponse)  # noqa
+    async def get_user(current_user: CurrentUser = Depends(auth_middleware)):
         return await user_controller.get_user(current_user)
-
+    
+    @router.get("/users/email", response_model=ApiResponse)  # noqa
+    async def get_user_by_email(email: Email):
+        return await user_controller.get_user_by_email(email)
+    
     return router 

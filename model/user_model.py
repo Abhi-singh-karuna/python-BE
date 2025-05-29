@@ -97,3 +97,7 @@ class EmailVerificationTemplateModel(CustomBaseModel):
     subject: str = Field(..., description="Email subject")
     body: str = Field(..., description="Email body")
 
+class CurrentUser(CustomBaseModel):
+    id: str = Field(..., description="User's ID")
+    email: str = Field(..., description="User's email")
+

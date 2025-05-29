@@ -1,9 +1,9 @@
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import BaseModel, ValidationError
 from fastapi.responses import JSONResponse
 from fastapi.requests import Request
 from fastapi import status
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 #  Base model that forbids unexpected fields and can be extended for shared config.
 class CustomBaseModel(BaseModel):
