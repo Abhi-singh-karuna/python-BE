@@ -3,13 +3,13 @@ from typing import List, Optional, Tuple
 from config.config import Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
-# from utils.constants import DATE_FORMAT_RFC3339
-import uuid
 from datetime import datetime
 from model.user_model import UserCreate, UserResponse, VerifyUser, OtpResponse
 from database import DatabaseConnection
 import bcrypt
 from .queries import *
+from utils.token_generator import generate_secure_token
+
 
 DATE_FORMAT_RFC3339 = "%Y-%m-%dT%H:%M:%S.%fZ" 
 
@@ -91,30 +91,33 @@ class UserRepository(Repository):
                 raise DuplicateUserError("User already exists.", "DUPLICATE_USER")
 
             hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
-            user_id = str(uuid.uuid4())
-            now = datetime.utcnow()
+            verification_token = generate_secure_token()
 
-            await DatabaseConnection.execute(
-                CREATE_USER,
-                user_id,
-                user.name,
+            await DatabaseConnection.execute( CREATE_USER,
+                user.first_name,
+                user.last_name,
                 user.email,
                 hashed_password.decode('utf-8'),
                 user.phone_no,
-                True,
-                True,
-                now,
-                now
+                user.profile_picture,
+                verification_token
             )
+            row = await DatabaseConnection.fetchrow(GET_USER_BY_EMAIL, user.email)
+            if not row:
+                return None
 
-            created_user = await DatabaseConnection.fetchrow(GET_USER_BY_ID, user_id)
-            return UserResponse(**created_user) if created_user else None
+            # Map the tuple to field names (must match order in GET_USER_BY_EMAIL)
+            user_dict = {
+                "id": row[0],
+                "is_active": row[2],
+            }
+
+            return UserResponse(**user_dict)
         except Exception as e:
             self.logger.error(f"Error creating user: {str(e)}")
             raise
 
     async def get_user_by_email(self, email: str) -> Optional[UserResponse]:
-        # "SELECT id, password, is_verified, is_active, created_at, updated_at FROM users WHERE email = $1"
         try:
             row = await DatabaseConnection.fetchrow(GET_USER_BY_EMAIL, email)
             if not row:
@@ -124,10 +127,10 @@ class UserRepository(Repository):
             user_dict = {
                 "id": row[0],
                 # "password": row[1],
-                "is_verified": row[2],
+                "is_active": row[2],
                 # "is_active": row[3],
-                "created_at": row[4],
-                "updated_at": row[5],
+                # "created_at": row[3],
+                # "updated_at": row[4],
             }
 
             return UserResponse(**user_dict)

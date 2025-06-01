@@ -7,29 +7,27 @@ from model.response_model import ApiResponse, ResponseMeta, ResponseError
 
 class UserBase(CustomBaseModel):
     """Base model for user data"""
-    name: str = Field(..., min_length=2, description="User's full name")
+    first_name: str = Field(..., min_length=2, description="User's first name")
+    last_name: str = Field(..., min_length=2, description="User's last name")
     email: EmailStr = Field(..., description="User's email address")
     phone_no: str = Field(..., description="User's phone number")
+    profile_picture: Optional[str] = Field(None, description="User's profile picture")
 
 class UserCreate(UserBase):
     """Model for user creation request"""
     password: str = Field(..., min_length=6, description="User's password")
-    otp: Optional[str] = Field(None, description="One-time password for verification")
+    verification_token: Optional[str] = Field(None, description="User's verification token")
 
 class UserResponse(CustomBaseModel):
     """Model for user response data"""
     id: str = Field(..., description="User's unique identifier")
-    # password: str = Field(..., description="User's hashed password")
-    is_verified: bool = Field(..., description="User's verification status")
-    is_active: bool = Field(True, description="User's active status")
-    created_at: datetime = Field(..., description="Account creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
+    is_active: bool = Field(..., description="User's active status")
 
 
     class Config:
         from_attributes = True
 
-class CreateUserResponse(UserResponse):
+class CreateUserResponse(CustomBaseModel):
     """Model for user creation response data"""
     id: str = Field(..., description="User's unique identifier")
     is_verified: bool = Field(..., description="User's verification status")

@@ -3,16 +3,18 @@
 # User queries
 GET_ALL_USERS = "SELECT * FROM users"
 
-GET_USER_BY_EMAIL = "SELECT id, password, is_verified, is_active, created_at, updated_at FROM users WHERE email = $1"
+GET_USER_BY_EMAIL = "SELECT id::text AS id, password_hash, is_active, created_at, updated_at FROM users WHERE email = $1"
 
 GET_USER_BY_ID = "SELECT id, name, email, phone_no, password, is_verified, is_active, created_at, updated_at FROM users WHERE id = $1"
 
-CREATE_USER = """
-    INSERT INTO users (
-        id, name, email, password, phone_no, is_verified,
-        is_active, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-"""
+CREATE_USER = "SELECT * FROM create_user($1, $2, $3, $4, $5, $6, $7)"
+
+# CREATE_USER = """
+#     INSERT INTO users (
+#         id, name, email, password, phone_no, is_verified,
+#         is_active, created_at, updated_at
+#     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+# """
 
 # OTP queries
 GET_OTP_BY_EMAIL = """

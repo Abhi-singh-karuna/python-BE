@@ -170,7 +170,7 @@ class UserInteractor(UserService):
                     self.config.ApplicationMessages.en.InvalidCredentials.Message,
                     self.config.ApplicationMessages.en.InvalidCredentials.Key
                 )
-            if not bcrypt.checkpw(password.encode('utf-8'), user_with_password['password'].encode('utf-8')):
+            if not bcrypt.checkpw(password.encode('utf-8'), user_with_password['password_hash'].encode('utf-8')):
                 raise UserServiceError(
                     self.config.ApplicationMessages.en.InvalidCredentials.Message,
                     self.config.ApplicationMessages.en.InvalidCredentials.Key
