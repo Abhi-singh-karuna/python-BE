@@ -101,12 +101,16 @@ class DatabaseConnection:
     async def fetchrow(cls, query: str, *args):
         conn = await cls.get_connection()
         try:
-            return await conn.fetchrow(query, *args)
+            record = await conn.fetchrow(query, *args)
+            if record is None:
+                return None
+            return tuple(record.values())  # <-- returning a tuple
         except Exception as e:
             logger.error("Fetchrow query failed", error=str(e), query=query)
             raise
         finally:
             await cls.release_connection(conn)
+
 
     @classmethod
     async def execute(cls, query: str, *args):
@@ -123,54 +127,57 @@ class DatabaseConnection:
     async def init_db(cls):
         # Initialize the database schema by executing SQL files.
         conn = None
+
+        async def split_sql_statements(sql: str, is_procedure: bool) -> list[str]:
+            # Helper to split SQL script into executable statements
+            if not is_procedure:
+                return [stmt.strip() for stmt in sql.split(';') if stmt.strip()]
+
+            statements = []
+            current_stmt_lines = []
+            in_dollar_quote = False
+
+            for line in sql.splitlines():
+                # Toggle dollar quote when $$ appears
+                if '$$' in line:
+                    in_dollar_quote = not in_dollar_quote
+                current_stmt_lines.append(line)
+
+                if not in_dollar_quote and ';' in line:
+                    statements.append('\n'.join(current_stmt_lines).strip())
+                    current_stmt_lines = []
+
+            if current_stmt_lines:
+                statements.append('\n'.join(current_stmt_lines).strip())
+
+            return [stmt for stmt in statements if stmt]
+
+        async def execute_sql_file(filename: str, context: str, is_procedure=False):
+            sql = cls._load_sql_file(filename)
+            statements = await split_sql_statements(sql, is_procedure)
+
+            for stmt in statements:
+                try:
+                    # logger.info(f"Executing {context} statement...")
+                    await conn.execute(stmt)
+                except Exception as e:
+                    if "already exists" not in str(e).lower():
+                        logger.error(f"Error executing statement in {context}: {e}")
+                        raise
+                    # logger.warning(f"{context} already exists or failed but ignored: {e}")
+
         try:
             conn = await cls.get_connection()
-            async def execute_sql_file(filename: str, context: str, is_procedure=False):
-                # Execute an SQL file, handling procedures and triggers if specified.
-                sql = cls._load_sql_file(filename)
-                if is_procedure:
-                    # FIX: Only match CREATE ... $$ ... $$; blocks that start at the beginning of a line (ignoring comments and whitespace)
-                    # This prevents comments and DROP statements from being included in the block, which caused syntax errors.
-                    pattern = re.compile(r'(?im)^\s*(CREATE[\s\S]+?\$\$[\s\S]+?\$\$;)', re.MULTILINE)
-                    blocks = pattern.findall(sql)
-                    # Remove these blocks from the SQL string
-                    sql_remaining = pattern.sub('', sql)
-                    # Execute CREATE ... $$ ... $$; blocks
-                    for block in blocks:
-                        try:
-                            logger.info(f"Executing block: {block}")  # Debug log
-                            await conn.execute(block)
-                        except Exception as e:
-                            if "already exists" not in str(e).lower():
-                                raise
-                            logger.warning(f"{context} already exists or failed: {str(e)}")
-                    # Execute other statements (like DROP ...;)
-                    statements = [stmt.strip() for stmt in sql_remaining.split(';') if stmt.strip()]
-                    for statement in statements:
-                        try:
-                            logger.info(f"Executing statement: {statement}")  # Debug log
-                            await conn.execute(statement)
-                        except Exception as e:
-                            if "already exists" not in str(e).lower():
-                                raise
-                            logger.warning(f"{context} already exists or failed: {str(e)}")
-                else:
-                    statements = [stmt.strip() for stmt in sql.split(';') if stmt.strip()]
-                    for statement in statements:
-                        try:
-                            await conn.execute(statement)
-                        except Exception as e:
-                            if "already exists" not in str(e).lower():
-                                raise
-                            logger.warning(f"{context} already exists or failed: {str(e)}")
 
-            # Create tables
+            logger.info("Initializing database tables.. init.sql ")
+            # Execute schema creation scripts
             await execute_sql_file('init.sql', context="Table/Index")
 
-            # Create procedures, functions, triggers
+            logger.info("Initializing database procedures.. procedures.sql ")
+            # Execute procedures/functions/triggers
             await execute_sql_file('procedures.sql', context="Procedure/Function/Trigger", is_procedure=True)
 
-            logger.info("Database tables and procedures initialized successfully.")
+            logger.info("Database tables(init.sql) and procedures(procedures.sql) initialized successfully.")
 
         except Exception as e:
             logger.error("Failed to initialize database schema", error=str(e))

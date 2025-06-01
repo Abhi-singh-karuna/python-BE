@@ -16,17 +16,23 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=6, description="User's password")
     otp: Optional[str] = Field(None, description="One-time password for verification")
 
-class UserResponse(UserBase):
+class UserResponse(CustomBaseModel):
     """Model for user response data"""
     id: str = Field(..., description="User's unique identifier")
-    password: str = Field(..., description="User's hashed password")
+    # password: str = Field(..., description="User's hashed password")
     is_verified: bool = Field(..., description="User's verification status")
     is_active: bool = Field(True, description="User's active status")
     created_at: datetime = Field(..., description="Account creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
+
     class Config:
         from_attributes = True
+
+class CreateUserResponse(UserResponse):
+    """Model for user creation response data"""
+    id: str = Field(..., description="User's unique identifier")
+    is_verified: bool = Field(..., description="User's verification status")
 
 class VerifyUser(CustomBaseModel):
     email: EmailStr = Field(..., description="User's email address")

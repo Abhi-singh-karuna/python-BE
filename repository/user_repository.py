@@ -114,12 +114,27 @@ class UserRepository(Repository):
             raise
 
     async def get_user_by_email(self, email: str) -> Optional[UserResponse]:
+        # "SELECT id, password, is_verified, is_active, created_at, updated_at FROM users WHERE email = $1"
         try:
             row = await DatabaseConnection.fetchrow(GET_USER_BY_EMAIL, email)
-            return UserResponse(**row) if row else None
+            if not row:
+                return None
+
+            # Map the tuple to field names (must match order in GET_USER_BY_EMAIL)
+            user_dict = {
+                "id": row[0],
+                # "password": row[1],
+                "is_verified": row[2],
+                # "is_active": row[3],
+                "created_at": row[4],
+                "updated_at": row[5],
+            }
+
+            return UserResponse(**user_dict)
         except Exception as e:
             self.logger.error(f"Error getting user by email: {str(e)}")
             raise
+
 
     async def verify_user_by_email(self, verify_user: VerifyUser) -> Optional[UserResponse]:
         try:

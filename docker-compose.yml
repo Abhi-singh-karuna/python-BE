@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./custom-config.yml:/app/config/config.yml
+    environment:
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456789
+      - POSTGRES_DB=PolicyPro
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

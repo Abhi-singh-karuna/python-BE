@@ -3,9 +3,9 @@
 # User queries
 GET_ALL_USERS = "SELECT * FROM users"
 
-GET_USER_BY_EMAIL = "SELECT * FROM users WHERE email = $1"
+GET_USER_BY_EMAIL = "SELECT id, password, is_verified, is_active, created_at, updated_at FROM users WHERE email = $1"
 
-GET_USER_BY_ID = "SELECT * FROM users WHERE id = $1"
+GET_USER_BY_ID = "SELECT id, name, email, phone_no, password, is_verified, is_active, created_at, updated_at FROM users WHERE id = $1"
 
 CREATE_USER = """
     INSERT INTO users (

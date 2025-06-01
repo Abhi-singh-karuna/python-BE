@@ -20,6 +20,7 @@ class ApiResponse(CustomBaseModel):
     message: str = Field(..., description="Response message")
     data: Optional[dict] = Field(None, description="Response data")
     error: Optional[ResponseError] = Field(None, description="Error information")
+    total_count: Optional[int] = Field(0, description="Total count of records")
     meta: ResponseMeta = Field(..., description="Response metadata")
 
 def create_success_response(message: str, data: dict = None) -> ApiResponse:
