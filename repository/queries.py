@@ -16,6 +16,28 @@ CREATE_USER = "SELECT * FROM create_user($1, $2, $3, $4, $5, $6, $7)"
 #     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 # """
 
+
+# Terms of Service queries
+GET_TERMS_OF_SERVICE = """
+    SELECT 
+        tos.id AS terms_id,
+        tos.title AS terms_title,
+        tos.subtitle AS terms_subtitle,
+        tos.content AS terms_content,
+        tsc.id AS sub_id,
+                    tsc.title AS sub_title,
+                    tsc.content AS sub_content,
+                    tsc.sort_order
+                FROM 
+                    terms_of_service tos
+                LEFT JOIN 
+                    terms_sub_content tsc 
+                ON 
+                    tos.id = tsc.terms_id
+                ORDER BY 
+                    tos.id, tsc.sort_order;
+            """
+
 # OTP queries
 GET_OTP_BY_EMAIL = """
     SELECT otp, created_at 

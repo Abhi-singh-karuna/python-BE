@@ -1,6 +1,51 @@
 -- Extension for UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Main Terms of Service Table
+CREATE TABLE IF NOT EXISTS terms_of_service (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    subtitle VARCHAR(255),
+    content TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (title, subtitle)  -- ensures uniqueness by title+subtitle
+);
+
+-- Sub-Content Table
+CREATE TABLE IF NOT EXISTS terms_sub_content (
+    id SERIAL PRIMARY KEY,
+    terms_id INTEGER NOT NULL REFERENCES terms_of_service(id) ON DELETE CASCADE,
+    title VARCHAR(255),
+    content TEXT,
+    sort_order INTEGER,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (terms_id, title, sort_order)  -- prevents duplicate entries under same ToS
+);
+
+-- Insert Main ToS
+INSERT INTO terms_of_service (title, subtitle, content)
+VALUES (
+    'Terms of Service',
+    'Welcome to Pro Policy Advocates',
+    'These Terms of Service ("Agreement") govern your access to and use of the website, mobile applications, and online services provided by Pro Policy Advocates ("Pro Policy Advocates," "we," or "us"). By accessing or using our Service, you agree to be bound by this Agreement, including any additional terms and conditions referenced herein. If you do not agree to these terms, you may not use the Service.'
+)
+ON CONFLICT (title, subtitle) DO NOTHING;
+
+-- Insert Sub-Content (prevents duplicates using UNIQUE constraint)
+INSERT INTO terms_sub_content (terms_id, title, content, sort_order)
+VALUES
+    (1, '1. Our Service', 'Pro Policy Advocates is an independent subscription service designed to provide consumers with transparent, unbiased information about their insurance policies. Our platform offers tools and resources to help you manage your insurance.', 1),
+    (1, '2. Our Service', 'Pro Policy Advocates is an independent subscription service designed to provide consumers with transparent, unbiased information about their insurance policies. Our platform offers tools and resources to help you manage your insurance.', 2),
+    (1, '3. Our Service', 'Pro Policy Advocates is an independent subscription service designed to provide consumers with transparent, unbiased information about their insurance policies. Our platform offers tools and resources to help you manage your insurance.', 3),
+    (1, '4. Our Service', 'Pro Policy Advocates is an independent subscription service designed to provide consumers with transparent, unbiased information about their insurance policies. Our platform offers tools and resources to help you manage your insurance.', 4),
+    (1, '5. Our Service', 'Pro Policy Advocates is an independent subscription service designed to provide consumers with transparent, unbiased information about their insurance policies. Our platform offers tools and resources to help you manage your insurance.', 5),
+    (1, '6. Our Service', 'Pro Policy Advocates is an independent subscription service designed to provide consumers with transparent, unbiased information about their insurance policies. Our platform offers tools and resources to help you manage your insurance.', 6)
+ON CONFLICT (terms_id, title, sort_order) DO NOTHING;
+
+
+
 -- Roles table
 CREATE TABLE IF NOT EXISTS roles (
     id SERIAL PRIMARY KEY,

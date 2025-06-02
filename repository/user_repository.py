@@ -4,7 +4,7 @@ from config.config import Config
 from utils.logger import Logger
 from utils.cache_handler import CacheHandler
 from datetime import datetime
-from model.user_model import UserCreate, UserResponse, VerifyUser, OtpResponse
+from model.user_model import UserCreate, UserResponse, VerifyUser, OtpResponse, TermsOfService, TermsSubContent
 from database import DatabaseConnection
 import bcrypt
 from .queries import *
@@ -37,6 +37,9 @@ class Repository(ABC):
 
     @abstractmethod
     async def get_user_by_email(self, email: str) -> Optional[UserResponse]: pass
+
+    @abstractmethod
+    async def get_terms_of_service(self) -> Optional[TermsOfService]: pass
 
     @abstractmethod
     async def verify_user_by_email(self, verify_user: VerifyUser) -> Optional[UserResponse]: pass
@@ -126,11 +129,7 @@ class UserRepository(Repository):
             # Map the tuple to field names (must match order in GET_USER_BY_EMAIL)
             user_dict = {
                 "id": row[0],
-                # "password": row[1],
                 "is_active": row[2],
-                # "is_active": row[3],
-                # "created_at": row[3],
-                # "updated_at": row[4],
             }
 
             return UserResponse(**user_dict)
@@ -138,6 +137,46 @@ class UserRepository(Repository):
             self.logger.error(f"Error getting user by email: {str(e)}")
             raise
 
+    async def get_terms_of_service(self) -> Optional[TermsOfService]:
+        try:
+            rows = await DatabaseConnection.fetch(GET_TERMS_OF_SERVICE)
+
+            if not rows:
+                return None
+
+            # Build main Terms of Service data from the first row
+            first_row = rows[0]
+            terms_data = {
+                # "id": first_row["terms_id"],
+                "title": first_row["terms_title"],
+                "subtitle": first_row["terms_subtitle"],
+                "content": first_row["terms_content"],
+                "sub_content": []
+            }
+
+           # Collect sub_content rows without duplicates
+            sub_contents = []
+            seen_sub_ids = set()
+
+            for row in rows:
+                sub_id = row["sub_id"]
+                if sub_id and sub_id not in seen_sub_ids:
+                    sub_contents.append(
+                        TermsSubContent(
+                            # id=sub_id,
+                            title=row["sub_title"],
+                            content=row["sub_content"],
+                            # sort_order=row["sort_order"]
+                        )
+                    )
+                    seen_sub_ids.add(sub_id)
+
+            terms_data["sub_content"] = sub_contents
+            return TermsOfService(**terms_data)
+
+        except Exception as e:
+            self.logger.error(f"Error fetching Terms of Service: {str(e)}")
+            raise
 
     async def verify_user_by_email(self, verify_user: VerifyUser) -> Optional[UserResponse]:
         try:

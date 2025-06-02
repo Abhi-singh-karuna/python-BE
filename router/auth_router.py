@@ -30,4 +30,8 @@ def get_auth_router(auth_controller: AuthController, user_controller: UserContro
     async def get_user_by_email(email: Email):
         return await user_controller.get_user_by_email(email)
     
+    @router.get("/terms-of-service", response_model=ApiResponse)  # noqa
+    async def get_terms_of_service():
+        return await user_controller.get_terms_of_service()
+    
     return router 

@@ -88,7 +88,21 @@ class UserController:
                 code="GET_USER_ERROR",
                 message=str(e)
             )
-
+        
+    async def get_terms_of_service(self) -> ApiResponse:
+        """Retrieves the complete Terms of Service with sub-content."""
+        try:
+            terms = await self.user_service.get_terms_of_service()
+            return create_success_response(
+                message="Terms of Service retrieved successfully",
+                data=terms.model_dump()
+            )
+        except UserServiceError as e:
+            return create_error_response(
+                code=e.code,
+                message=e.message
+            )   
+        
     async def get_otp_by_email(self, email: Email, db) -> ApiResponse:
         """Generates and sends OTP to user's email for verification."""
         try:

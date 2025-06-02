@@ -4,7 +4,7 @@ import bcrypt
 from urllib.parse import urljoin, urlencode
 from model.user_model import (
     UserBase, Email, VerifyUser, UserCreate, UserResponse, 
-    OtpResponse, EmailVerificationTemplateModel
+    OtpResponse, EmailVerificationTemplateModel, TermsOfService
 )
 from model.auth import Token, RefreshToken
 from config.config import Config
@@ -90,6 +90,14 @@ class UserInteractor(UserService):
             return await self.user_repo.get_user_by_email(email)
         except UserNotFoundError as e:
             raise UserServiceError(e.message, e.code)
+        except RepositoryError as e:
+            raise UserServiceError(e.message, e.code)
+        
+
+    async def get_terms_of_service(self) -> Optional[TermsOfService]:
+        """Retrieves the complete Terms of Service with sub-content."""
+        try:
+            return await self.user_repo.get_terms_of_service()
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
 

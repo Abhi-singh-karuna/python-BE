@@ -1,5 +1,5 @@
 from pydantic import EmailStr, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from jose import jwt
 from model.schemas.base import CustomBaseModel
@@ -31,6 +31,19 @@ class CreateUserResponse(CustomBaseModel):
     """Model for user creation response data"""
     id: str = Field(..., description="User's unique identifier")
     is_verified: bool = Field(..., description="User's verification status")
+
+class TermsSubContent(CustomBaseModel):
+    """Model for each sub-section of the Terms of Service"""
+    title: str = Field(..., description="Title of the sub content section")
+    content: str = Field(..., description="Content of the sub content section")
+
+
+class TermsOfService(CustomBaseModel):
+    """Model for the complete Terms of Service with sub-content"""
+    title: str = Field(..., description="Main title of the Terms of Service")
+    subtitle: Optional[str] = Field(None, description="Subtitle of the Terms of Service")
+    content: str = Field(..., description="Main content of the Terms of Service")
+    sub_content: List[TermsSubContent] = Field(default_factory=list, description="List of sub-sections")
 
 class VerifyUser(CustomBaseModel):
     email: EmailStr = Field(..., description="User's email address")
