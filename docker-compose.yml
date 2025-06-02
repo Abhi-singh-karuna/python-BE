@@ -2,36 +2,28 @@ version: "3.8"
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     volumes:
-      - ./custom-config.yml:/app/config/config.yml
+      - ./config/config.yml:/config/config.yml
     environment:
-      - POSTGRES_HOST=db
-      - REDIS_HOST=redis
-    depends_on:
-      - db
-      - redis
+      # Database Configuration
+      - DATABASE_HOST=host.docker.internal
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=123456789
+      - DATABASE_NAME=PolicyPro
+      # Redis Configuration
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PASSWORD=
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - app-network
+    restart: unless-stopped
 
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=123456789
-      - POSTGRES_DB=PolicyPro
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7
-    ports:
-      - "6380:6379"
-    volumes:
-      - redis_data:/data
-
-volumes:
-  postgres_data:
-  redis_data:
+networks:
+  app-network:
+    driver: bridge

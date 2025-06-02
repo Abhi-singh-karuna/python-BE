@@ -1,11 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Optional
+from typing import Optional
 import bcrypt
-from urllib.parse import urljoin, urlencode
-from model.user_model import (
-    UserBase, Email, VerifyUser, UserCreate, UserResponse, 
-    OtpResponse, EmailVerificationTemplateModel, TermsOfService
-)
+from model.user_model import ( UserCreate, UserResponse, TermsOfService)
 from model.auth import Token, RefreshToken
 from config.config import Config
 from utils.logger import Logger
@@ -25,34 +21,19 @@ class UserServiceError(Exception):
 
 class UserService(ABC):
     @abstractmethod
-    async def validate_user_verified(self, user_id: str ) -> Tuple[bool, Optional[UserBase]]:pass
-
-    @abstractmethod
-    async def get_users(self) -> List[UserBase]: pass
-
-    @abstractmethod
     async def create_user(self, user: UserCreate) -> Optional[UserResponse]: pass
 
     @abstractmethod
     async def get_user_by_email(self, email: str) -> Optional[UserResponse]: pass
 
     @abstractmethod
-    async def get_user_by_id(self, user_id: str) -> Tuple[bool, Optional[UserResponse], Optional[str]]: pass
-
-    @abstractmethod
-    async def verify_user_by_email(self, user_info: VerifyUser) -> Optional[UserBase]: pass
-
-    @abstractmethod
-    async def get_otp_by_email(self, email: Email) -> Optional[OtpResponse]: pass
-
-    @abstractmethod
-    async def generate_user_registration_draft(self, user: UserBase) -> str: pass
-
-    @abstractmethod
     async def verify_credentials(self, email: str, password: str) -> Optional[UserResponse]: pass
 
     @abstractmethod
     async def verify_refresh_token(self, refresh_token: str) -> Optional[UserResponse]: pass
+
+    @abstractmethod
+    async def get_terms_of_service(self) -> Optional[TermsOfService]: pass
 
 class UserInteractor(UserService):
     def __init__(
@@ -64,18 +45,6 @@ class UserInteractor(UserService):
         self.user_repo = user_repo
         self.logger = logger
         self.config = config
-
-    async def validate_user_verified(self, user_id: str) -> Tuple[bool, Optional[UserBase]]:
-        try:
-            return await self.user_repo.validate_user_verified(user_id)
-        except RepositoryError as e:
-            raise UserServiceError(e.message, e.code)
-
-    async def get_users(self) -> List[UserBase]:
-        try:
-            return await self.user_repo.get_users()
-        except RepositoryError as e:
-            raise UserServiceError(e.message, e.code)
 
     async def create_user(self, user: UserCreate) -> Optional[UserResponse]:
         try:
@@ -93,82 +62,11 @@ class UserInteractor(UserService):
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
         
-
     async def get_terms_of_service(self) -> Optional[TermsOfService]:
-        """Retrieves the complete Terms of Service with sub-content."""
         try:
             return await self.user_repo.get_terms_of_service()
         except RepositoryError as e:
             raise UserServiceError(e.message, e.code)
-
-    async def get_user_by_id(self, user_id: str) -> Tuple[bool, Optional[UserResponse], Optional[str]]:
-        return await self.user_repo.get_user_by_id(user_id)
-
-    async def verify_user_by_email(self, user_info: VerifyUser) -> Optional[UserBase]:
-        try:
-            return await self.user_repo.verify_user_by_email(user_info)
-        except (UserNotFoundError, InvalidCredentialsError) as e:
-            raise UserServiceError(e.message, e.code)
-        except RepositoryError as e:
-            raise UserServiceError(e.message, e.code)
-
-    async def get_otp_by_email(self, email: Email) -> Optional[OtpResponse]:
-        try:
-            return await self.user_repo.get_otp_by_email(email)
-        except UserNotFoundError as e:
-            raise UserServiceError(e.message, e.code)
-        except RepositoryError as e:
-            raise UserServiceError(e.message, e.code)
-
-    async def generate_user_registration_draft(self, user: UserBase) -> str:
-        template = self.template_env.get_template('user_pdf.html')
-        return template.render(
-            name=user.name,
-            email=user.email
-        )
-
-    async def prepare_verification_email_body(self, user_email: str, otp_code: str) -> str:
-        template = self.template_env.get_template('verification_email.html')
-        
-        # Generate verification link
-        verify_url = urljoin(self.config.WebURL, "/verify-email")
-        params = {
-            "email": user_email,
-            "otp": otp_code
-        }
-        verify_url = f"{verify_url}?{urlencode(params)}"
-
-        # Create template data
-        data = EmailVerificationTemplateModel(
-            user_email=user_email,
-            verification_link=verify_url,
-            otp_code=otp_code
-        )
-
-        return template.render(data=data)
-
-    async def verify_user(self, email: str, otp: str) -> OtpResponse:
-        # Get user by email
-        user = await self.user_repo.get_user_by_email(email)
-        if not user:
-            return None
-            
-        # Get OTP for user
-        otp_info = await self.user_repo.get_otp_by_email(email)
-        if not otp_info or otp_info.otp != otp:
-            return None
-            
-        # Verify user
-        verified_user = await self.user_repo.verify_user_by_email(
-            VerifyUser(email=email, otp=otp)
-        )
-        if not verified_user:
-            return None
-            
-        return OtpResponse(
-            message="User verified successfully",
-            is_verified=True
-        )
 
     async def verify_credentials(self, email: str, password: str) -> Optional[UserResponse]:
         try:

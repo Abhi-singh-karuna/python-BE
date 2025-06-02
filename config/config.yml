@@ -6,17 +6,17 @@ general:
 
 sql:
   write:
-    host: localhost
+    host: ${DATABASE_HOST}
     port: 5432
-    user: postgres
-    password: "123456789"
-    database: PolicyPro
+    user: ${DATABASE_USER}
+    password: "${DATABASE_PASSWORD}"
+    database: ${DATABASE_NAME}
 
 redis:
   write:
-    host: localhost
+    host: ${REDIS_HOST}
     port: 6379
-    password: ""
+    password: "${REDIS_PASSWORD}"
     database: 0
 
 # JWT Configuration

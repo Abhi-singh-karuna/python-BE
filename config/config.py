@@ -76,7 +76,9 @@ class Config(BaseSettings):
     @classmethod
     def load_yaml(cls, filepath: str) -> dict:
         with open(filepath, "r") as f:
-            return yaml.safe_load(f)
+            # Expand environment variables in the YAML content
+            content = os.path.expandvars(f.read())
+            return yaml.safe_load(content)
 
 def load_config(config_file: str = "config.yaml") -> Config:
     """

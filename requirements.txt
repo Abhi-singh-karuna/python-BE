@@ -13,3 +13,4 @@ aioredis==2.0.1
 sendgrid==6.12.2
 python-multipart==0.0.6
 email_validator==2.1.1
+typer==0.7.0

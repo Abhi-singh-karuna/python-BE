@@ -1,9 +1,7 @@
 from pydantic import EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from jose import jwt
 from model.schemas.base import CustomBaseModel
-from model.response_model import ApiResponse, ResponseMeta, ResponseError
 
 class UserBase(CustomBaseModel):
     """Base model for user data"""
@@ -45,15 +43,15 @@ class TermsOfService(CustomBaseModel):
     content: str = Field(..., description="Main content of the Terms of Service")
     sub_content: List[TermsSubContent] = Field(default_factory=list, description="List of sub-sections")
 
-class VerifyUser(CustomBaseModel):
-    email: EmailStr = Field(..., description="User's email address")
-    otp: str = Field(..., min_length=6, max_length=6, description="One-time password")
+# class VerifyUser(CustomBaseModel):
+#     email: EmailStr = Field(..., description="User's email address")
+#     otp: str = Field(..., min_length=6, max_length=6, description="One-time password")
 
-class OtpResponse(CustomBaseModel):
-    email: EmailStr = Field(..., description="User's email address")
-    otp: str = Field(..., description="Generated OTP")
-    created_at: datetime = Field(..., description="OTP creation timestamp")
-    is_verified: bool = Field(..., description="OTP verification status")
+# class OtpResponse(CustomBaseModel):
+#     email: EmailStr = Field(..., description="User's email address")
+#     otp: str = Field(..., description="Generated OTP")
+#     created_at: datetime = Field(..., description="OTP creation timestamp")
+#     is_verified: bool = Field(..., description="OTP verification status")
 
 class LoginRequest(CustomBaseModel):
     email: EmailStr = Field(..., description="User's email address")
