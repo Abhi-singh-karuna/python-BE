@@ -18,22 +18,14 @@ class GeneralConfig(BaseModel):
 
 class SQLWriteConfig(BaseModel):
     host: str
-    port: int
+    port: str
     user: str
     password: str
     database: str
 
-class RedisWriteConfig(BaseModel):
-    host: str
-    port: int
-    password: str
-    database: int
 
 class SQLConfig(BaseModel):
     write: SQLWriteConfig
-
-class RedisConfig(BaseModel):
-    write: RedisWriteConfig
 
 class MessageFormat(BaseModel):
     Key: str
@@ -53,11 +45,11 @@ class ApplicationMessages(BaseModel):
 class Config(BaseSettings):
     """
     Main Config class that loads all configuration.
-    Supports env var overrides with prefix ABHI_ and nested keys with '__'.
+    Supports env var overrides with prefix POLICY_ and nested keys with '__'.
     """
     general: GeneralConfig
     sql: SQLConfig
-    redis: RedisConfig
+    # redis: RedisConfig
 
     JWT_SECRET_KEY: str
     JWT_REFRESH_SECRET_KEY: str
@@ -68,7 +60,7 @@ class Config(BaseSettings):
     ApplicationMessages: ApplicationMessages
 
     model_config = SettingsConfigDict(
-        env_prefix="ABHI_",
+        env_prefix="POLICY_",
         env_nested_delimiter="__",
         case_sensitive=True,
         extra="allow"
@@ -87,9 +79,9 @@ def load_config(config_file: str = "config.yaml") -> Config:
     # Convert environment variables to nested dict
     env_vars = {}
     for key, value in os.environ.items():
-        if key.startswith("ABHI_"):
+        if key.startswith("POLICY_"):
             # Remove prefix and split by delimiter
-            parts = key.replace("ABHI_", "").lower().split("__")
+            parts = key.replace("POLICY_", "").lower().split("__")
             current = env_vars
             for part in parts[:-1]:
                 if part not in current:

@@ -41,7 +41,7 @@ class DatabaseConnection:
             config = cls._load_config()
             db_config = {
                 'host': config.sql.write.host,
-                'port': config.sql.write.port,
+                'port': int(config.sql.write.port),
                 'user': config.sql.write.user,
                 'password': config.sql.write.password,
                 'database': config.sql.write.database,
@@ -49,13 +49,14 @@ class DatabaseConnection:
                 'max_size': 10,
                 'command_timeout': 60.0,
                 'server_settings': {
-                    'application_name': 'activity_app'
+                    'application_name': 'police_app'
                 }
             }
             try:
                 cls._pool = await asyncpg.create_pool(**db_config)
-                logger.info("Database connection pool created", pool_size=db_config['max_size'])
+                logger.info("Database connection pool created", pool_size=db_config['max_size'], host=db_config['host'], port=db_config['port'], user=db_config['user'], password=db_config['password'], database=db_config['database'])
             except Exception as e:
+                # logger.error("Database connection pool creation failed varibale values" , db_config)
                 logger.error("Failed to create database pool", error=str(e))
                 raise
         return cls._pool

@@ -6,33 +6,12 @@ general:
 
 sql:
   write:
-    host: localhost
-    port: 5432
-    user: postgres
-    password: "123456789"
-    database: PolicyPro
+    host: localhost_internal
+    port: "5432_internal"
+    user: postgres_internal
+    password: "123456789_internal"
+    database: PolicyPro_internal
 
-redis:
-  write:
-    host: localhost
-    port: 6379
-    password: ""
-    database: 0
-
-# sql:
-#   write:
-#     host: ${DATABASE_HOST}
-#     port: 5432
-#     user: ${DATABASE_USER}
-#     password: "${DATABASE_PASSWORD}"
-#     database: ${DATABASE_NAME}
-
-# redis:
-#   write:
-#     host: ${REDIS_HOST}
-#     port: 6379
-#     password: "${REDIS_PASSWORD}"
-#     database: 0
 
 # JWT Configuration
 JWT_SECRET_KEY: "your-256-bit-secret-key-here"
