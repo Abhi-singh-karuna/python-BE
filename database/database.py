@@ -40,11 +40,11 @@ class DatabaseConnection:
         if cls._pool is None:
             config = cls._load_config()
             db_config = {
-                'host': config.sql.write.host,
-                'port': int(config.sql.write.port),
-                'user': config.sql.write.user,
-                'password': config.sql.write.password,
-                'database': config.sql.write.database,
+                'host': config.general.sql.write.host,
+                'port': int(config.general.sql.write.port),
+                'user': config.general.sql.write.user,
+                'password': config.general.sql.write.password,
+                'database': config.general.sql.write.database,
                 'min_size': 1,
                 'max_size': 10,
                 'command_timeout': 60.0,

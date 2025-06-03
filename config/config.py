@@ -12,10 +12,6 @@ class LoggerConfig(BaseModel):
 class RouterConfig(BaseModel):
     port: int
 
-class GeneralConfig(BaseModel):
-    logger: LoggerConfig
-    router: RouterConfig
-
 class SQLWriteConfig(BaseModel):
     host: str
     port: str
@@ -23,9 +19,13 @@ class SQLWriteConfig(BaseModel):
     password: str
     database: str
 
-
 class SQLConfig(BaseModel):
     write: SQLWriteConfig
+
+class GeneralConfig(BaseModel):
+    logger: LoggerConfig
+    router: RouterConfig
+    sql: SQLConfig
 
 class MessageFormat(BaseModel):
     Key: str
@@ -39,16 +39,17 @@ class ApplicationMessagesLang(BaseModel):
     TokenExpired: MessageFormat
     InternalServerError: MessageFormat
 
-class ApplicationMessages(BaseModel):
-    en: ApplicationMessagesLang
+# class ApplicationMessages(BaseModel):
+#     en: ApplicationMessagesLang
 
 class Config(BaseSettings):
     """
     Main Config class that loads all configuration.
     Supports env var overrides with prefix POLICY_ and nested keys with '__'.
     """
+    current_lang: str
     general: GeneralConfig
-    sql: SQLConfig
+    # sql: SQLConfig
     # redis: RedisConfig
 
     JWT_SECRET_KEY: str
@@ -57,7 +58,7 @@ class Config(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int
 
-    ApplicationMessages: ApplicationMessages
+    ApplicationMessages: Dict[str, ApplicationMessagesLang]
 
     model_config = SettingsConfigDict(
         env_prefix="POLICY_",
@@ -127,7 +128,7 @@ def main(
         cfg.general.logger.level = log_level
 
     print("Logger Level:", cfg.general.logger.level)
-    print("SQL Host:", cfg.sql.write.host)
+    print("SQL Host:", cfg.general.sql.write.host)
     print("JWT Secret:", cfg.JWT_SECRET_KEY)
     print("User Not Found Msg:", cfg.ApplicationMessages.en.UserNotFound.Message)
 

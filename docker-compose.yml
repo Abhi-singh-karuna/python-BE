@@ -12,11 +12,11 @@ services:
       - ./config/config.yml:/config/config.yml
     environment:
       # Database Configuration
-      - POLICY_SQL__WRITE__HOST=host.docker.internal
-      - POLICY_SQL__WRITE__USER=postgres
-      - POLICY_SQL__WRITE__PASSWORD=123456789
-      - POLICY_SQL__WRITE__DATABASE=PolicyPro
-      - POLICY_SQL__WRITE__PORT=5432
+      - POLICY_GENERAL__SQL__WRITE__HOST=host.docker.internal
+      - POLICY_GENERAL__SQL__WRITE__USER=postgres
+      - POLICY_GENERAL__SQL__WRITE__PASSWORD=123456789
+      - POLICY_GENERAL__SQL__WRITE__DATABASE=PolicyPro
+      - POLICY_GENERAL__SQL__WRITE__PORT=5432
 
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -13,7 +13,7 @@ from model.schemas.base import validation_exception_handler
 from router.user_router import get_user_router
 
 # Create an instance of the FastAPI application
-app = FastAPI(title="Authentication API")
+app = FastAPI(title="PolicyPro Service")
 
 # Load configuration
 config = load_config("config/config.yml")
@@ -28,7 +28,7 @@ app.add_middleware(LoggingMiddleware)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 # Initialize application dependencies
-logger = Logger(name="auth_app")
+logger = Logger(name="policy_pro_app")
 
 # Initialize the user repository with dependencies
 user_repo = None  # Will be initialized in startup
@@ -55,6 +55,9 @@ async def startup_event():
     app.include_router(get_user_router(user_controller))
     
     logger.info("Application startup complete")
+
+    # TODO: {REMOVE} printlogger for checking the config
+    logger.info(f"Application startup - check logger :{config.ApplicationMessages[config.current_lang].UserNotFound.Key} --  {config.ApplicationMessages[config.current_lang].UserNotFound.Message}")
 
 @app.on_event("shutdown")
 async def shutdown_event():

@@ -1,16 +1,19 @@
+# current language
+current_lang: "en"
+
 general:
   logger:
     level: "debug"
   router:
-    port: 8080
+    port: 8090
 
-sql:
-  write:
-    host: localhost_internal
-    port: "5432_internal"
-    user: postgres_internal
-    password: "123456789_internal"
-    database: PolicyPro_internal
+  sql:
+    write:
+      host: localhost
+      port: "5432"
+      user: postgres
+      password: "123456789"
+      database: PolicyPro
 
 
 # JWT Configuration

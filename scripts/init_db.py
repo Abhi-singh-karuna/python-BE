@@ -12,11 +12,11 @@ from database.database import DatabaseConnection
 # Replace DB_CONFIG with DatabaseConnection configuration
 config = DatabaseConnection._load_config()
 DB_CONFIG = {
-    'host': config.sql.write.host,
-    'port': config.sql.write.port,
-    'user': config.sql.write.user,
-    'password': config.sql.write.password,
-    'database': config.sql.write.database
+    'host': config.general.sql.write.host,
+    'port': config.general.sql.write.port,
+    'user': config.general.sql.write.user,
+    'password': config.general.sql.write.password,
+    'database': config.general.sql.write.database
 }
 
 async def init_db():

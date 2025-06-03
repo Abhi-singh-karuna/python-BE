@@ -25,14 +25,14 @@ class InvalidCredentialsError(RepositoryError):
     pass
 
 class Repository(ABC):
-    # @abstractmethod
-    # async def check_database_health(self) -> bool: pass
+    @abstractmethod
+    async def check_database_health(self) -> bool: pass
 
-    # @abstractmethod
-    # async def create_user(self, user: UserCreate) -> Optional[UserResponse]: pass
+    @abstractmethod
+    async def create_user(self, user: UserCreate) -> Optional[UserResponse]: pass
 
-    # @abstractmethod
-    # async def get_user_by_email(self, email: str) -> Optional[UserResponse]: pass
+    @abstractmethod
+    async def get_user_by_email(self, email: str) -> Optional[UserResponse]: pass
 
     @abstractmethod
     async def get_terms_of_service(self) -> Optional[TermsOfService]: pass
