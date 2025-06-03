@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from model.user_model import UserCreate, CurrentUser
 from model.user_model import TokenData, RefreshToken
 from middleware.auth_middleware import auth_middleware
@@ -9,6 +9,10 @@ from model.response_model import ApiResponse
 def get_user_router(user_controller: UserController) -> APIRouter:
     router = APIRouter(prefix="/auth", tags=["User"])
 
+    @router.get("/healthz")
+    async def health_check():
+        return await user_controller.check_health()
+        
     @router.post("/signup", response_model=ApiResponse) 
     async def signup(user: UserCreate, request: Request):
         user.ip_address = get_client_ip(request)

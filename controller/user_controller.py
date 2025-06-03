@@ -23,6 +23,22 @@ class UserController:
         self.config = config
         self.logger = logger
 
+
+    async def check_health(self) -> ApiResponse:
+        """Checks the health of the user service."""
+        try:
+            result = await self.user_service.check_health() 
+            return create_success_response(
+                message="User service is healthy",
+                data={"status": "ok"}
+            )
+        except UserServiceError as e:
+            return create_error_response(
+                code=e.code,
+                message=e.message
+            )
+        
+
     async def signup(self, user: UserCreate) -> ApiResponse:
         """Handles user signup process and returns authentication tokens."""
         try:

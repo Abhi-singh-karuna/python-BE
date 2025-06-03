@@ -20,6 +20,9 @@ class UserServiceError(Exception):
 
 class UserService(ABC):
     @abstractmethod
+    async def check_health(self) -> dict: pass
+
+    @abstractmethod
     async def create_user(self, user: UserCreate) -> Optional[UserResponse]: pass
 
     @abstractmethod
@@ -44,6 +47,27 @@ class UserInteractor(UserService):
         self.user_repo = user_repo
         self.logger = logger
         self.config = config
+
+    async def check_health(self) -> dict:
+        try:
+            is_db_healthy = await self.user_repo.check_database_health()
+            
+            if not is_db_healthy:
+                return {
+                    "status": "error",
+                    "message": "database unreachable"
+                }
+            
+            return {
+                "status": "ok"
+            }
+            
+        except Exception as e:
+            self.logger.error("Health check failed", error=str(e))
+            return {
+                "status": "error",
+                "message": "internal server error"
+            } 
 
     async def create_user(self, user: UserCreate) -> Optional[UserResponse]:
         try:
@@ -195,4 +219,4 @@ class UserInteractor(UserService):
             to_encode,
             self.config.JWT_REFRESH_SECRET_KEY,
             algorithm=self.config.JWT_ALGORITHM
-        ) 
+        )

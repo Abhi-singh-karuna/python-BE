@@ -25,11 +25,14 @@ class InvalidCredentialsError(RepositoryError):
     pass
 
 class Repository(ABC):
-    @abstractmethod
-    async def create_user(self, user: UserCreate) -> Optional[UserResponse]: pass
+    # @abstractmethod
+    # async def check_database_health(self) -> bool: pass
 
-    @abstractmethod
-    async def get_user_by_email(self, email: str) -> Optional[UserResponse]: pass
+    # @abstractmethod
+    # async def create_user(self, user: UserCreate) -> Optional[UserResponse]: pass
+
+    # @abstractmethod
+    # async def get_user_by_email(self, email: str) -> Optional[UserResponse]: pass
 
     @abstractmethod
     async def get_terms_of_service(self) -> Optional[TermsOfService]: pass
@@ -39,6 +42,17 @@ class UserRepository(Repository):
     def __init__(self, logger: Logger, config: Config):
         self.logger = logger
         self.config = config
+
+    # Check database health
+    async def check_database_health(self) -> bool:
+        try:
+            # Execute a simple query to check database connectivity
+            await DatabaseConnection.execute("SELECT 1")
+            return True
+        except Exception as e:
+            self.logger.error("Database health check failed", error=str(e))
+            return False
+
 
     async def create_user(self, user: UserCreate) -> Optional[UserResponse]:
         try:
@@ -133,12 +147,8 @@ class UserRepository(Repository):
             self.logger.error(f"Error fetching Terms of Service: {str(e)}")
             raise
 
-    #     try:
-    #         row = await DatabaseConnection.fetchrow(GET_USER_BY_EMAIL, email)
-    #         return row
-    #     except Exception as e:
-    #         self.logger.error(f"Error getting user by email with password: {str(e)}")
-    #         raise
 
+# Get database connection
 async def get_connection():
     return await DatabaseConnection.get_connection()
+
