@@ -59,6 +59,9 @@ async def startup_event():
     # TODO: {REMOVE} printlogger for checking the config
     logger.info(f"Application startup - check logger :{config.ApplicationMessages[config.current_lang].UserNotFound.Key} --  {config.ApplicationMessages[config.current_lang].UserNotFound.Message}")
 
+    # TODO: {REMOVE} printlogger for checking the databse config
+    logger.info(f"Application startup - check database config : HOST : {config.general.sql.write.host} -- PORT : {config.general.sql.write.port} -- USER : {config.general.sql.write.user} -- PASSWORD : {config.general.sql.write.password} -- DATABASE : {config.general.sql.write.database}")
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup application on shutdown"""

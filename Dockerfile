@@ -1,28 +1,40 @@
-# Use Python 3.11 slim image as base
-FROM python:3.11-slim
+# ---------- Stage 1: Build ----------
+    FROM python:3.10.0-slim AS builder
 
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first to leverage Docker cache
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Create config directory
-RUN mkdir -p /config
-
-# Expose the port the app runs on
-EXPOSE 8080
-
-# Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"] 
+    # Set working directory
+    WORKDIR /app
+    
+    # Install system dependencies
+    RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
+    
+    # Copy requirements and install dependencies into a temp location
+    COPY requirements.txt .
+    RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+    
+    # ---------- Stage 2: Runtime ----------
+    FROM python:3.10.0-slim
+    
+    # Set working directory
+    WORKDIR /app
+    
+    # Create non-root user
+    RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+    
+    # Copy installed dependencies
+    COPY --from=builder /install /usr/local
+    
+    # Copy app source code
+    COPY . .
+    
+    # Create and set permission for config directory
+    RUN mkdir -p /app/config && chown -R appuser:appgroup /app /app/config
+    
+    # Use non-root user
+    USER appuser
+    
+    # Expose FastAPI port
+    EXPOSE 8080
+    
+    # Command to run the app
+    CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    

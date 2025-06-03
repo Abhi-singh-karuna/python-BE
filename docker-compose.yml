@@ -7,17 +7,15 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8000:8000"
     volumes:
-      - ./config/config.yml:/config/config.yml
+      - ./config:/app/config  
     environment:
-      # Database Configuration
       - POLICY_GENERAL__SQL__WRITE__HOST=host.docker.internal
       - POLICY_GENERAL__SQL__WRITE__USER=postgres
       - POLICY_GENERAL__SQL__WRITE__PASSWORD=123456789
       - POLICY_GENERAL__SQL__WRITE__DATABASE=PolicyPro
       - POLICY_GENERAL__SQL__WRITE__PORT=5432
-
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

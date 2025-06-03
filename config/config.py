@@ -130,11 +130,11 @@ def main(
     print("Logger Level:", cfg.general.logger.level)
     print("SQL Host:", cfg.general.sql.write.host)
     print("JWT Secret:", cfg.JWT_SECRET_KEY)
-    print("User Not Found Msg:", cfg.ApplicationMessages.en.UserNotFound.Message)
+    print("User Not Found Msg:", cfg.ApplicationMessages[cfg.current_lang].UserNotFound.Message)
 
     # Example error key check
     error_key = "USER_NOT_FOUND"
-    if error_key == cfg.ApplicationMessages.en.UserNotFound.Key:
+    if error_key == cfg.ApplicationMessages[cfg.current_lang].UserNotFound.Key:
         print("Handle user not found error")
 
 if __name__ == "__main__":
