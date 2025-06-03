@@ -3,6 +3,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Message
 from starlette.datastructures import Headers
 from utils.logger import Logger, request_id, endpoint, ip_address
+from utils.ip import get_client_ip
 from typing import Callable, Awaitable, Optional, Union, List
 import json
 import uuid
@@ -41,7 +42,10 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         req_id = str(uuid.uuid4())
         request_id.set(req_id)
         endpoint.set(request.url.path)
-        ip_address.set(request.client.host if request.client else "unknown")
+        
+        # Use the improved IP detection
+        client_ip = get_client_ip(request)
+        ip_address.set(client_ip)
 
         request_body: Optional[Union[dict, str]] = None
         raw_body: Optional[bytes] = None
@@ -67,7 +71,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             request_id=req_id,
             method=request.method,
             url=str(request.url),
-            client_ip=request.client.host if request.client else "unknown",
+            client_ip=client_ip,
             headers=dict(request.headers),
             request_body=request_body
         )

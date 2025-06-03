@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 import bcrypt
-from model.user_model import ( UserCreate, UserResponse, TermsOfService)
-from model.auth import Token, RefreshToken
+from model.user_model import ( UserCreate, UserResponse, TermsOfService, TokenData, Token, RefreshToken)
 from config.config import Config
 from utils.logger import Logger
 from repository.user_repository import (

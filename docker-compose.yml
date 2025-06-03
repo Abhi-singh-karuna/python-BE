@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   app:
+    container_name: pro-policy-app
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,12 +12,12 @@ services:
       - ./config/config.yml:/config/config.yml
     environment:
       # Database Configuration
-      - DATABASE_HOST=host.docker.internal
+      - ABHI_SQL__WRITE__HOST=host.docker.internal
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=123456789
       - DATABASE_NAME=PolicyPro
       # Redis Configuration
-      - REDIS_HOST=host.docker.internal
+      - ABHI_REDIS__WRITE__HOST=host.docker.internal
       - REDIS_PASSWORD=
     extra_hosts:
       - "host.docker.internal:host-gateway"

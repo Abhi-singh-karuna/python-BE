@@ -3,6 +3,19 @@ from typing import Optional, List
 from datetime import datetime
 from model.schemas.base import CustomBaseModel
 
+class TokenData(CustomBaseModel):
+    email: EmailStr = Field(..., description="User's email address")
+    password: str = Field(..., min_length=6, description="User's password")
+
+class Token(CustomBaseModel):
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    token_type: str = Field("bearer", description="Token type")
+    expires_in: int = Field(3600, description="Token expiration time in seconds")
+
+class RefreshToken(CustomBaseModel):
+    refresh_token: str = Field(..., description="JWT refresh token") 
+
 class UserBase(CustomBaseModel):
     """Base model for user data"""
     first_name: str = Field(..., min_length=2, description="User's first name")
@@ -15,6 +28,8 @@ class UserCreate(UserBase):
     """Model for user creation request"""
     password: str = Field(..., min_length=6, description="User's password")
     verification_token: Optional[str] = Field(None, description="User's verification token")
+    ip_address: Optional[str] = Field(None, description="User's IP address")
+    tos_accept_datetime: datetime = Field(..., description="Terms acceptance timestamp")
 
 class UserResponse(CustomBaseModel):
     """Model for user response data"""

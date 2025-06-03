@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from config.config import Config
 from utils.logger import Logger
-from utils.cache_handler import CacheHandler
 from model.user_model import UserCreate, UserResponse, TermsOfService, TermsSubContent
 from database import DatabaseConnection
 import bcrypt
@@ -37,11 +36,9 @@ class Repository(ABC):
 
 
 class UserRepository(Repository):
-    def __init__(self, logger: Logger, config: Config, redis_client: CacheHandler):
+    def __init__(self, logger: Logger, config: Config):
         self.logger = logger
         self.config = config
-        self.redis_client = redis_client
-
 
     async def create_user(self, user: UserCreate) -> Optional[UserResponse]:
         try:
@@ -59,7 +56,9 @@ class UserRepository(Repository):
                 hashed_password.decode('utf-8'),
                 user.phone_no,
                 user.profile_picture,
-                verification_token
+                verification_token,
+                user.ip_address,
+                user.tos_accept_datetime
             )
             row = await DatabaseConnection.fetchrow(QUERY_GET_USER_BY_EMAIL, user.email)
             if not row:

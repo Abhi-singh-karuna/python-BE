@@ -141,3 +141,12 @@ CREATE TABLE IF NOT EXISTS email_verifications (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMP NOT NULL
 );
+
+-- User ToS Acceptance Table
+CREATE TABLE user_tos_acceptance (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    accepted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ip_address INET,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

@@ -2,7 +2,7 @@ import yaml
 import os
 from typing import Dict
 from pydantic import BaseModel
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import typer
 
 # Define Pydantic models matching config.yaml structure
@@ -67,28 +67,55 @@ class Config(BaseSettings):
 
     ApplicationMessages: ApplicationMessages
 
-    class Config:
-        env_prefix = "ABHI_"
-        env_nested_delimiter = "__"
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_prefix="ABHI_",
+        env_nested_delimiter="__",
+        case_sensitive=True,
+        extra="allow"
+    )
 
     @classmethod
     def load_yaml(cls, filepath: str) -> dict:
         with open(filepath, "r") as f:
-            # Expand environment variables in the YAML content
             content = os.path.expandvars(f.read())
             return yaml.safe_load(content)
 
 def load_config(config_file: str = "config.yaml") -> Config:
-    """
-    Load the config from YAML + environment variables.
-    Env vars override YAML values.
-    """
-    # Load YAML config as dict
+
     yaml_data = Config.load_yaml(config_file)
-    # Let Pydantic merge env vars automatically
-    return Config.model_validate(yaml_data)
+
+    # Convert environment variables to nested dict
+    env_vars = {}
+    for key, value in os.environ.items():
+        if key.startswith("ABHI_"):
+            # Remove prefix and split by delimiter
+            parts = key.replace("ABHI_", "").lower().split("__")
+            current = env_vars
+            for part in parts[:-1]:
+                if part not in current:
+                    current[part] = {}
+                current = current[part]
+            current[parts[-1]] = value
+
+    # Recursively update yaml_data with environment variables
+    def recursive_update(d, u):
+        for k, v in u.items():
+            if isinstance(v, dict) and k in d and isinstance(d[k], dict):
+                recursive_update(d[k], v)
+            elif v is not None:
+                d[k] = v
+        return d
+
+    # Merge YAML data with environment variables
+    merged = recursive_update(yaml_data, env_vars)
+
+    # Log the merged configuration for debugging
+    # logging.info(f"Merged Configuration: {merged}")
+
+    # Create final config
+    return Config.model_validate(merged) 
+
+
 
 # CLI tool for testing or config overrides
 app = typer.Typer(help="Config loader CLI with env var and YAML support.")

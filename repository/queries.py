@@ -4,7 +4,7 @@
 QUERY_GET_USER_BY_EMAIL = "SELECT id::text AS id, password_hash, is_active, created_at, updated_at FROM users WHERE email = $1"
 
 # Create user
-QUERY_CREATE_USER = "SELECT * FROM create_user($1, $2, $3, $4, $5, $6, $7)"
+QUERY_CREATE_USER = "SELECT * FROM create_user($1, $2, $3, $4, $5, $6, $7, $8, $9)"
 
 # Terms of Service queries
 QUERY_GET_TERMS_OF_SERVICE = """

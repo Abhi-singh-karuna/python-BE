@@ -29,8 +29,17 @@ $$;
 
 
 DROP FUNCTION IF EXISTS create_user(
-    VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TEXT, VARCHAR
+    VARCHAR,        -- p_first_name
+    VARCHAR,        -- p_last_name
+    VARCHAR,        -- p_email
+    VARCHAR,        -- p_password_hash
+    VARCHAR,        -- p_phone_no
+    TEXT,           -- p_picture
+    VARCHAR,        -- p_verification_token
+    INET,           -- p_ip_address
+    TIMESTAMPTZ     -- p_accepted_at
 );
+
 
 CREATE OR REPLACE FUNCTION create_user(
     p_first_name VARCHAR,
@@ -39,7 +48,9 @@ CREATE OR REPLACE FUNCTION create_user(
     p_password_hash VARCHAR,
     p_phone_no VARCHAR,
     p_picture TEXT,
-    p_verification_token VARCHAR
+    p_verification_token VARCHAR,
+    p_ip_address INET,
+    p_accepted_at TIMESTAMPTZ
 )
 RETURNS TABLE (
     user_id TEXT,
@@ -56,26 +67,35 @@ BEGIN
     )
     RETURNING id INTO uuid_id;
 
-    -- Use UUID for internal inserts
+    -- User provider linkage
     INSERT INTO user_providers (
         user_id, provider, provider_sub, created_at
     ) VALUES (
         uuid_id, 'email', p_email, NOW()
     );
 
+    -- Email verification record
     INSERT INTO email_verifications (
         user_id, verification_token, is_verified, created_at, expires_at
     ) VALUES (
         uuid_id, p_verification_token, FALSE, NOW(), NOW() + INTERVAL '1 day'
     );
 
-    -- Return UUID as text, and is_verified as false
+    -- TOS acceptance record using frontend-supplied time
+    INSERT INTO user_tos_acceptance (
+        user_id, accepted_at, ip_address
+    ) VALUES (
+        uuid_id, p_accepted_at, p_ip_address
+    );
+
+    -- Return values
     user_id := uuid_id::TEXT;
     is_verified := FALSE;
 
     RETURN NEXT;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 
