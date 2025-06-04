@@ -3,7 +3,6 @@ __pycache__/
 *.pyo
 *.pyd
 .env
-config/config.yml
 venv/
 .envrc
 .git

@@ -5,17 +5,16 @@ services:
     container_name: pro-policy-app
     build:
       context: .
-      dockerfile: Dockerfile
+      args:
+        - DB_HOST=host.docker.internal
+        - DB_USER=postgres
+        - DB_PASSWORD=123456789
+        - DB_NAME=PolicyPro
+        - DB_PORT=5432
     ports:
       - "8000:8000"
     volumes:
-      - ./config:/app/config  
-    environment:
-      - POLICY_GENERAL__SQL__WRITE__HOST=host.docker.internal
-      - POLICY_GENERAL__SQL__WRITE__USER=postgres
-      - POLICY_GENERAL__SQL__WRITE__PASSWORD=123456789
-      - POLICY_GENERAL__SQL__WRITE__DATABASE=PolicyPro
-      - POLICY_GENERAL__SQL__WRITE__PORT=5432
+      - ./config:/app/config
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

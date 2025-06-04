@@ -8,7 +8,7 @@ from model.response.response_model import ApiResponse
 def get_user_routers(user_controller: UserController):
 
     # Health check router
-    common_router = APIRouter(prefix="", tags=["common_router"])
+    common_router = APIRouter(prefix="", tags=["Common"])
 
     @common_router.get("/healthz")
     async def health_check():

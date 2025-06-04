@@ -77,9 +77,14 @@ class Config(BaseSettings):
             content = os.path.expandvars(f.read())
             return yaml.safe_load(content)
 
-def load_config(config_file: str = "config.yaml") -> Config:
+def load_config(config_file: str = "config.yml") -> Config:
+    # Get the absolute path to the config file
+    filepath = os.path.join(os.path.dirname(__file__), config_file)
 
-    yaml_data = Config.load_yaml(config_file)
+    # Load the YAML data from the specified file
+    yaml_data = Config.load_yaml("/app/config/config.yml")
+
+
 
     # Convert environment variables to nested dict
     env_vars = {}
@@ -106,11 +111,11 @@ def load_config(config_file: str = "config.yaml") -> Config:
     # Merge YAML data with environment variables
     merged = recursive_update(yaml_data, env_vars)
 
-    # Log the merged configuration for debugging
+    # Log the merged configuration for debugging (optional)
     # logging.info(f"Merged Configuration: {merged}")
 
     # Create final config
-    return Config.model_validate(merged) 
+    return Config.model_validate(merged)
 
 
 
