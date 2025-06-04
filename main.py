@@ -8,9 +8,8 @@ from service.user_service import UserInteractor
 from controller.user_controller import UserController
 from middleware.cors_middleware import default_cors_config, CORSMiddleware
 from middleware.logging_middleware import LoggingMiddleware
-from router.user_router import get_user_router
+from router.user_router import get_user_routers  # make sure to import the correct function
 from model.schemas.base import validation_exception_handler
-from router.user_router import get_user_router
 
 # Create an instance of the FastAPI application
 app = FastAPI(title="PolicyPro Service")
@@ -52,8 +51,10 @@ async def startup_event():
     # auth_controller = AuthController(user_service=user_service, config=config, logger=logger)
     
     # Include routers with their respective controllers
-    app.include_router(get_user_router(user_controller))
-    
+    routers = get_user_routers(user_controller)
+    for router in routers:
+        app.include_router(router)
+        
     logger.info("Application startup complete")
 
     # TODO: {REMOVE} printlogger for checking the config

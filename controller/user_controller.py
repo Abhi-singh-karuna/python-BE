@@ -28,10 +28,11 @@ class UserController:
         """Checks the health of the user service."""
         try:
             result = await self.user_service.check_health() 
-            return create_success_response(
-                message="User service is healthy",
-                data={"status": "ok"}
-            )
+            # return create_success_response(
+            #     message="User service is healthy",
+            #     data={"status": "ok"}
+            # )
+            return {"status": "ok"}
         except UserServiceError as e:
             return create_error_response(
                 code=e.code,
