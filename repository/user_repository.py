@@ -5,7 +5,7 @@ from utils.logger import Logger
 from model.user_model import UserCreate, UserResponse, TermsOfService, TermsSubContent
 from database import DatabaseConnection
 import bcrypt
-from .queries import *
+from .database_query.queries import *
 from utils.token_generator import generate_secure_token
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 project_root = str(Path(__file__).parent.parent)
 sys.path.append(project_root)
 
-from database.database import DatabaseConnection
+from database.psql_connection import DatabaseConnection
 
 # Replace DB_CONFIG with DatabaseConnection configuration
 config = DatabaseConnection._load_config()

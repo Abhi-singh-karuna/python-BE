@@ -4,7 +4,7 @@ from model.user_model import TokenData, RefreshToken
 from middleware.auth_middleware import auth_middleware
 from controller.user_controller import UserController , Email
 from utils.ip import get_client_ip
-from model.response_model import ApiResponse
+from model.response.response_model import ApiResponse
 
 def get_user_router(user_controller: UserController) -> APIRouter:
     router = APIRouter(prefix="/auth", tags=["User"])

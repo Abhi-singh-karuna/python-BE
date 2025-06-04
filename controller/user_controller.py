@@ -1,5 +1,5 @@
 from model.user_model import ( Email, UserCreate)
-from model.response_model import create_success_response, create_error_response, ApiResponse
+from model.response.response_model import create_success_response, create_error_response, ApiResponse
 from config.config import Config
 from utils.logger import Logger
 from service.user_service import UserInteractor, UserServiceError

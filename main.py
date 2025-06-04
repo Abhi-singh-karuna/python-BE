@@ -49,7 +49,6 @@ async def startup_event():
     user_repo = UserRepository(logger=logger, config=config)
     user_service = UserInteractor(user_repo=user_repo, logger=logger, config=config)
     user_controller = UserController(user_service=user_service, config=config, logger=logger)
-    # auth_controller = AuthController(user_service=user_service, config=config, logger=logger)
     
     # Include routers with their respective controllers
     app.include_router(get_user_router(user_controller))
