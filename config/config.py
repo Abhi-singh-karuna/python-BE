@@ -38,9 +38,13 @@ class ApplicationMessagesLang(BaseModel):
     InvalidToken: MessageFormat
     TokenExpired: MessageFormat
     InternalServerError: MessageFormat
+    CreateUserError: MessageFormat
+    CreateUserSuccess: MessageFormat
+    GetUserError: MessageFormat
+    GetUserSuccess: MessageFormat
+    GetTermsOfServiceError: MessageFormat
+    GetTermsOfServiceSuccess: MessageFormat
 
-# class ApplicationMessages(BaseModel):
-#     en: ApplicationMessagesLang
 
 class Config(BaseSettings):
     """

@@ -5,7 +5,7 @@ from utils.logger import Logger
 from model.user_model import UserCreate, UserResponse, TermsOfService, TermsSubContent
 from database import DatabaseConnection
 import bcrypt
-from .queries import *
+from .database_queries.queries import *
 from utils.token_generator import generate_secure_token
 
 
@@ -58,7 +58,7 @@ class UserRepository(Repository):
         try:
             row = await DatabaseConnection.fetchrow(QUERY_GET_USER_BY_EMAIL, user.email)
             if row:
-                raise DuplicateUserError("User already exists.", "DUPLICATE_USER")
+                raise DuplicateUserError(self.config.ApplicationMessages[self.config.current_lang].DuplicateUser.Message, self.config.ApplicationMessages[self.config.current_lang].DuplicateUser.Key)
 
             hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
             verification_token = generate_secure_token()

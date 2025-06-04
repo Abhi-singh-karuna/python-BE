@@ -1,5 +1,5 @@
 from model.user_model import ( Email, UserCreate)
-from model.response_model import create_success_response, create_error_response, ApiResponse
+from model.response.response_model import create_success_response, create_error_response, ApiResponse
 from config.config import Config
 from utils.logger import Logger
 from service.user_service import UserInteractor, UserServiceError
@@ -46,7 +46,7 @@ class UserController:
             created_user = await self.user_service.create_user(user)
 
             return create_success_response(
-                message="User created successfully",
+                message=self.config.ApplicationMessages[self.config.current_lang].CreateUserSuccess.Message,
                 data = created_user.model_dump()
             )
         except UserServiceError as e:
@@ -104,7 +104,7 @@ class UserController:
             }
 
             return create_success_response(
-                message="Token refreshed successfully",
+                message=self.config.ApplicationMessages[self.config.current_lang].RefreshTokenSuccess.Message,
                 data=token_data
             )
         except UserServiceError as e:
@@ -150,11 +150,11 @@ class UserController:
             result = await self.user_service.create_user(user, db)
             if not result:
                 return create_error_response(
-                    code="CREATE_USER_ERROR",
-                    message="Failed to create user"
+                    code=self.config.ApplicationMessages[self.config.current_lang].CreateUserError.Key,
+                    message=self.config.ApplicationMessages[self.config.current_lang].CreateUserError.Message
                 )
             return create_success_response(
-                message="User created successfully",
+                message=self.config.ApplicationMessages[self.config.current_lang].CreateUserSuccess.Message,
                 data=result.model_dump()
             )
         except UserServiceError as e:
@@ -166,7 +166,7 @@ class UserController:
         except Exception as e:
             self.logger.error(f"Error in create_user: {str(e)}")
             return create_error_response(
-                code="CREATE_USER_ERROR",
+                code=self.config.ApplicationMessages[self.config.current_lang].CreateUserError.Key,
                 message=str(e)
             )
 
@@ -176,11 +176,11 @@ class UserController:
             user = await self.user_service.get_user_by_email(email.email)
             if not user:
                 return create_error_response(
-                    code="USER_NOT_FOUND",
-                    message=self.config.ApplicationMessages.en.UserNotFound.Message
+                    code=self.config.ApplicationMessages[self.config.current_lang].UserNotFound.Key,
+                    message=self.config.ApplicationMessages[self.config.current_lang].UserNotFound.Message
                 )
             return create_success_response(
-                message="User retrieved successfully",
+                message=self.config.ApplicationMessages[self.config.current_lang].GetUserSuccess.Message,
                 data=user.model_dump()
             )
         except UserServiceError as e:
@@ -190,7 +190,7 @@ class UserController:
             )
         except Exception as e:
             return create_error_response(
-                code="GET_USER_ERROR",
+                code=self.config.ApplicationMessages[self.config.current_lang].GetUserError.Key,
                 message=str(e)
             )
         
@@ -199,7 +199,7 @@ class UserController:
         try:
             terms = await self.user_service.get_terms_of_service()
             return create_success_response(
-                message="Terms of Service retrieved successfully",
+                message=self.config.ApplicationMessages[self.config.current_lang].GetTermsOfServiceSuccess.Message,
                 data=terms.model_dump()
             )
         except UserServiceError as e:

@@ -30,7 +30,7 @@ class DatabaseConnection:
     @classmethod
     def _load_sql_file(cls, filename: str) -> str:
         # Load an SQL file from the 'sql' directory.
-        sql_path = Path(__file__).parent / 'sql' / filename
+        sql_path = Path(__file__).parent / 'migration' / filename
         with open(sql_path, 'r') as f:
             return f.read()
 
